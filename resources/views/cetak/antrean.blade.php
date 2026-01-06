@@ -234,7 +234,9 @@
         <div class="qr-section">
             {{-- QR Code menggunakan ID unik --}}
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ url('/lacak-id/' . $antrean->id) }}" alt="QR Code">
-            <p>Scan untuk pantau status servis</p>
+            <p>Scan untuk pantau status servis.</p>
+            <p>Cek manual melalui website:</p>
+            <p style="margin-top: 3px; font-weight: bold; font-size: 8pt;">{{ config('app.url') }}</p>
         </div>
 
         <div class="footer">

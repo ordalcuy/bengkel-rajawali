@@ -13,15 +13,24 @@ class WelcomeController extends Controller
     public function index()
     {
         // Ambil data antrean aktif HARI INI untuk ditampilkan di tabel
-        $antreanAktif = Antrean::with(['pengunjung', 'karyawan', 'layanan', 'kendaraan'])
+        // Optimasi: hanya eager load relasi yang benar-benar digunakan + limit 50
+        $antreanAktif = Antrean::with(['karyawan:id,nama_karyawan', 'layanan:id,jenis_layanan', 'kendaraan:id,nomor_plat,merk,tipe'])
+            ->select('id', 'nomor_antrean', 'status', 'waktu_mulai', 'created_at', 'karyawan_id', 'kendaraan_id')
             ->whereIn('status', ['Menunggu', 'Dikerjakan', 'Check-in'])
-            ->whereDate('created_at', Carbon::today()) // Hanya antrean hari ini
-            ->orderByRaw("FIELD(status, 'Dikerjakan', 'Check-in', 'Menunggu')")
+            ->whereDate('created_at', Carbon::today())
+            ->orderByRaw("CASE 
+                WHEN status = 'Dikerjakan' THEN 1
+                WHEN status = 'Check-in' THEN 2
+                WHEN status = 'Menunggu' THEN 3
+                ELSE 4
+            END")
             ->orderBy('waktu_mulai', 'asc')
+            ->limit(50)
             ->get();
 
-        // Hitung statistik
-        $totalAntreanHariIni = Antrean::whereDate('created_at', Carbon::today())->count();
+        // Hitung statistik - optimasi dengan whereDate caching
+        $today = Carbon::today();
+        $totalAntreanHariIni = Antrean::whereDate('created_at', $today)->count();
         $mekanikAktif = Karyawan::where('role', 'mekanik')->count();
         
         // Hitung estimasi rata-rata berdasarkan antrean yang sedang menunggu
