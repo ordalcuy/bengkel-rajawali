@@ -1,0 +1,1 @@
+<script src="{{ asset('js/tts-player.js') }}"></script>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Antrean - {{ config('bengkel.nama') }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .font-sans { font-family: 'Inter', sans-serif; }
+        .bg-primary { background-color: #3b82f6; }
+        .bg-primary-dark { background-color: #2563eb; }
+        .text-primary { color: #3b82f6; }
+        .bg-success { background-color: #10b981; }
+        .text-success { color: #10b981; }
+        .sidebar { width: 380px; }
+        .main-content { margin-left: 380px; }
+        @media (max-width: 1024px) {
+            .sidebar { width: 100%; }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body class="font-sans bg-gray-50">
+    <!-- Sidebar Kiri -->
+    <div class="sidebar fixed left-0 top-0 h-screen bg-white shadow-lg overflow-y-auto">
+        <!-- Header Sidebar -->
+        <div class="bg-primary p-5 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <button onclick="window.history.back()" class="mb-3">
+                        <i class="fas fa-arrow-left text-white text-xl"></i>
+                    </button>
+                    <h1 class="text-2xl font-bold">Detail Antrean</h1>
+                </div>
+                <div class="bg-white text-primary px-4 py-2 rounded-full font-bold text-xl">
+                    {{ $antrean->nomor_antrean }}
+                </div>
+            </div>
+            
+            <!-- Status Badge -->
+            <div class="mt-4">
+                <div class="px-4 py-2 rounded-full font-semibold inline-flex items-center text-white
+                    @if($antrean->status == 'Selesai') bg-success
+                    @elseif($antrean->status == 'Dikerjakan') bg-yellow-500
+                    @else bg-gray-500 @endif">
+                    <i class="fas 
+                        @if($antrean->status == 'Selesai') fa-check-circle
+                        @elseif($antrean->status == 'Dikerjakan') fa-tools
+                        @else fa-clock @endif mr-2"></i>
+                    {{ $antrean->status }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Informasi Pelanggan -->
+        <div class="p-5 border-b">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-user text-primary mr-2"></i>
+                Data Pelanggan
+            </h2>
+            
+            <div class="space-y-3">
+                <div class="flex items-center">
+                    <div class="w-32 text-gray-600">Nama</div>
+                    <div class="font-medium">{{ $antrean->pengunjung->nama_pengunjung ?? '-' }}</div>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-32 text-gray-600">No. Telepon</div>
+                    <div class="font-medium">{{ $antrean->pengunjung->nomor_tlp ?? '-' }}</div>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-32 text-gray-600">Alamat</div>
+                    <div class="font-medium">{{ $antrean->pengunjung->alamat ?? '-' }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Informasi Kendaraan -->
+        <div class="p-5 border-b">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-motorcycle text-primary mr-2"></i>
+                Data Kendaraan
+            </h2>
+            
+            <div class="space-y-3">
+                <div class="flex items-center">
+                    <div class="w-32 text-gray-600">Plat Nomor</div>
+                    <div class="font-medium">{{ $antrean->kendaraan->nomor_plat ?? '-' }}</div>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-32 text-gray-600">Merk / Tipe</div>
+                    <div class="font-medium">{{ $antrean->kendaraan->merk->value ?? $antrean->kendaraan->merk ?? '-' }}</div>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-32 text-gray-600">Jenis Kendaraan</div>
+                    <div class="font-medium">{{ $antrean->kendaraan->jenisKendaraan->nama_jenis ?? '-' }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Layanan Dipilih -->
+        <div class="p-5">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-tools text-primary mr-2"></i>
+                Jenis Layanan
+            </h2>
+            
+            @php
+                $jenisLayanan = $antrean->layanan->groupBy('jenis_layanan');
+            @endphp
+
+            @forelse($jenisLayanan as $jenis => $layananGroup)
+                @php
+                    $badgeColor = match(strtolower($jenis)) {
+                        'ringan' => 'bg-blue-50 border-blue-100 text-blue-800',
+                        'sedang' => 'bg-green-50 border-green-100 text-green-800',
+                        'berat' => 'bg-red-50 border-red-100 text-red-800',
+                        default => 'bg-gray-50 border-gray-100 text-gray-800'
+                    };
+                    
+                    $iconColor = match(strtolower($jenis)) {
+                        'ringan' => 'text-blue-500',
+                        'sedang' => 'text-green-500',
+                        'berat' => 'text-red-500',
+                        default => 'text-gray-500'
+                    };
+
+                    $label = match(strtolower($jenis)) {
+                        'ringan' => 'Servis Ringan',
+                        'sedang' => 'Servis Sedang',
+                        'berat' => 'Servis Berat',
+                        default => ucfirst($jenis)
+                    };
+                @endphp
+            <div class="{{ $badgeColor }} border rounded-lg p-4 mb-2">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-wrench {{ $iconColor }} text-xl mr-3"></i>
+                        <div>
+                            <span class="font-semibold text-lg">{{ $label }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @empty
+            <div class="text-gray-500 italic">Belum ada layanan dipilih</div>
+            @endforelse
+        </div>
+        
+        <!-- Informasi Bengkel -->
+        <div class="p-5 bg-gray-50 border-t mt-auto">
+            <p class="text-sm text-gray-600">
+                <strong>{{ config('bengkel.nama') }}</strong><br>
+                {{ config('bengkel.alamat') }}
+            </p>
+        </div>
+    </div>
+    
+    <!-- Konten Utama (Kanan) -->
+    <div class="main-content min-h-screen p-6">
+        <!-- Header Timeline -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800">Timeline Antrean</h2>
+            <p class="text-gray-600">Proses pengerjaan dari awal hingga selesai</p>
+        </div>
+        
+        <!-- Timeline Horizontal -->
+        <div class="relative">
+            <!-- Garis Horizontal -->
+            <div class="absolute left-0 right-0 top-8 h-1 bg-gray-200"></div>
+            
+            <div class="flex justify-between relative z-10">
+                <!-- Tanggal Daftar -->
+                <div class="flex flex-col items-center text-center" style="width: 23%">
+                    <div class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-3 border-4 border-white shadow">
+                        <i class="fas fa-calendar-plus text-primary text-xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-1">Tanggal Daftar</h3>
+                    <p class="text-gray-600 text-sm">{{ $antrean->created_at->format('d M Y') }}</p>
+                    <p class="text-gray-600 font-medium">{{ $antrean->created_at->format('H:i') }}</p>
+                </div>
+                
+                <!-- Mulai Dikerjakan -->
+                <div class="flex flex-col items-center text-center" style="width: 23%">
+                    <div class="w-16 h-16 rounded-full 
+                        @if($antrean->waktu_mulai) bg-yellow-100 @else bg-gray-100 @endif 
+                        flex items-center justify-center mb-3 border-4 border-white shadow">
+                        <i class="fas fa-play-circle 
+                            @if($antrean->waktu_mulai) text-yellow-500 @else text-gray-400 @endif 
+                            text-xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-1">Mulai Dikerjakan</h3>
+                    @if($antrean->waktu_mulai)
+                        <p class="text-gray-600 text-sm">{{ \Carbon\Carbon::parse($antrean->waktu_mulai)->format('d M Y') }}</p>
+                        <p class="text-gray-600 font-medium">{{ \Carbon\Carbon::parse($antrean->waktu_mulai)->format('H:i') }}</p>
+                    @else
+                        <p class="text-gray-400 text-sm">-</p>
+                    @endif
+                </div>
+                
+                <!-- Mekanik -->
+                <div class="flex flex-col items-center text-center" style="width: 23%">
+                    <div class="w-16 h-16 rounded-full 
+                        @if($antrean->karyawan_id) bg-purple-100 @else bg-gray-100 @endif 
+                        flex items-center justify-center mb-3 border-4 border-white shadow">
+                        <i class="fas fa-user-cog 
+                            @if($antrean->karyawan_id) text-purple-500 @else text-gray-400 @endif 
+                            text-xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-1">Mekanik</h3>
+                    <p class="text-gray-700 font-medium text-lg">{{ $antrean->karyawan->nama_karyawan ?? '-' }}</p>
+                    <p class="text-gray-600 text-sm">{{ ucfirst($antrean->karyawan->role ?? '-') }}</p>
+                </div>
+                
+                <!-- Selesai -->
+                <div class="flex flex-col items-center text-center" style="width: 23%">
+                    <div class="w-16 h-16 rounded-full 
+                        @if($antrean->status == 'Selesai') bg-green-100 @else bg-gray-100 @endif 
+                        flex items-center justify-center mb-3 border-4 border-white shadow">
+                        <i class="fas fa-flag-checkered 
+                            @if($antrean->status == 'Selesai') text-success @else text-gray-400 @endif 
+                            text-xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-1">Selesai</h3>
+                    @if($antrean->waktu_selesai)
+                        <p class="text-gray-600 text-sm">{{ \Carbon\Carbon::parse($antrean->waktu_selesai)->format('d M Y') }}</p>
+                        <p class="text-gray-600 font-medium">{{ \Carbon\Carbon::parse($antrean->waktu_selesai)->format('H:i') }}</p>
+                    @else
+                        <p class="text-gray-400 text-sm">-</p>
+                    @endif
+                </div>
+            </div>
+        </div>
+        
+        <!-- Detail Timeline -->
+        <div class="mt-12 bg-white rounded-xl shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Detail Timeline</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Kolom Kiri -->
+                <div class="space-y-4">
+                    <div class="border-l-4 border-blue-500 pl-4 py-2">
+                        <div class="flex items-center mb-1">
+                            <i class="fas fa-calendar text-blue-500 mr-2"></i>
+                            <h4 class="font-medium">Pendaftaran</h4>
+                        </div>
+                        <p class="text-gray-600">Pelanggan mendaftar antrean</p>
+                        <p class="text-sm text-gray-500">{{ $antrean->created_at->format('d M Y, H:i') }} WIB</p>
+                    </div>
+                    
+                    @if($antrean->waktu_mulai)
+                    <div class="border-l-4 border-yellow-500 pl-4 py-2">
+                        <div class="flex items-center mb-1">
+                            <i class="fas fa-play text-yellow-500 mr-2"></i>
+                            <h4 class="font-medium">Mulai Pengerjaan</h4>
+                        </div>
+                        <p class="text-gray-600">Kendaraan mulai diperiksa oleh mekanik</p>
+                        <p class="text-sm text-gray-500">{{ \Carbon\Carbon::parse($antrean->waktu_mulai)->format('d M Y, H:i') }} WIB</p>
+                    </div>
+                    @endif
+                </div>
+                
+                <!-- Kolom Kanan -->
+                <div class="space-y-4">
+                    @if($antrean->karyawan_id)
+                    <div class="border-l-4 border-purple-500 pl-4 py-2">
+                        <div class="flex items-center mb-1">
+                            <i class="fas fa-user-cog text-purple-500 mr-2"></i>
+                            <h4 class="font-medium">Penanganan Mekanik</h4>
+                        </div>
+                        <p class="text-gray-600">Dikerjakan oleh {{ $antrean->karyawan->nama_karyawan }}</p>
+                        <p class="text-sm text-gray-500">
+                            @if($antrean->waktu_mulai && $antrean->waktu_selesai)
+                                @php
+                                    $durasiMenit = \Carbon\Carbon::parse($antrean->waktu_mulai)->diffInMinutes(\Carbon\Carbon::parse($antrean->waktu_selesai));
+                                    $jam = floor($durasiMenit / 60);
+                                    $menit = $durasiMenit % 60;
+                                @endphp
+                                Durasi: 
+                                @if($jam > 0)
+                                    {{ $jam }} jam {{ $menit }} menit
+                                @else
+                                    {{ $menit }} menit
+                                @endif
+                            @elseif($antrean->waktu_mulai)
+                                Sedang berjalan
+                            @else
+                                Menunggu pengerjaan
+                            @endif
+                        </p>
+                    </div>
+                    @endif
+                    
+                    @if($antrean->status == 'Selesai')
+                    <div class="border-l-4 border-green-500 pl-4 py-2">
+                        <div class="flex items-center mb-1">
+                            <i class="fas fa-flag-checkered text-green-500 mr-2"></i>
+                            <h4 class="font-medium">Penyelesaian</h4>
+                        </div>
+                        <p class="text-gray-600">Servis selesai dan kendaraan siap diambil</p>
+                        <p class="text-sm text-gray-500">{{ \Carbon\Carbon::parse($antrean->waktu_selesai)->format('d M Y, H:i') }} WIB</p>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistik -->
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-xl shadow-sm p-5">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+                        <i class="fas fa-clock text-primary"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-600 text-sm">Durasi Pengerjaan</p>
+                        <p class="text-xl font-bold">
+                            @if($antrean->waktu_mulai && $antrean->waktu_selesai)
+                                @php
+                                    $durasiMenit = \Carbon\Carbon::parse($antrean->waktu_mulai)->diffInMinutes(\Carbon\Carbon::parse($antrean->waktu_selesai));
+                                    $jam = floor($durasiMenit / 60);
+                                    $menit = $durasiMenit % 60;
+                                @endphp
+                                @if($jam > 0)
+                                    {{ $jam }} jam {{ $menit }} menit
+                                @else
+                                    {{ $menit }} menit
+                                @endif
+                            @elseif($antrean->waktu_mulai)
+                                @php
+                                    $durasiMenit = \Carbon\Carbon::parse($antrean->waktu_mulai)->diffInMinutes(now());
+                                    $jam = floor($durasiMenit / 60);
+                                    $menit = $durasiMenit % 60;
+                                @endphp
+                                @if($jam > 0)
+                                    {{ $jam }} jam {{ $menit }} menit
+                                @else
+                                    {{ $menit }} menit
+                                @endif
+                            @else
+                                -
+                            @endif
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm p-5">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 rounded-full 
+                        @if($antrean->status == 'Selesai') bg-green-100 
+                        @elseif($antrean->status == 'Dikerjakan') bg-yellow-100
+                        @else bg-gray-100 @endif
+                        flex items-center justify-center mr-4">
+                        <i class="fas 
+                            @if($antrean->status == 'Selesai') fa-check-circle text-success
+                            @elseif($antrean->status == 'Dikerjakan') fa-tools text-yellow-500
+                            @else fa-clock text-gray-500 @endif"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-600 text-sm">Status</p>
+                        <p class="text-xl font-bold">{{ $antrean->status }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm p-5">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mr-4">
+                        <i class="fas fa-user-hard-hat text-purple-500"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-600 text-sm">Mekanik</p>
+                        <p class="text-xl font-bold">{{ $antrean->karyawan->nama_karyawan ?? '-' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tombol Aksi -->
+        <div class="mt-8 flex space-x-4">
+            <button onclick="window.history.back()" class="flex-1 bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg transition duration-300 flex items-center justify-center">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Kembali
+            </button>
+            
+        </div>
+    </div>
+
+    <script>
+        // Responsif untuk mobile
+        function adjustLayout() {
+            if (window.innerWidth < 1024) {
+                document.querySelector('.sidebar').classList.remove('fixed', 'h-screen');
+                document.querySelector('.main-content').classList.remove('ml-[380px]');
+            } else {
+                document.querySelector('.sidebar').classList.add('fixed', 'h-screen');
+                document.querySelector('.main-content').classList.add('ml-[380px]');
+            }
+        }
+        
+        window.addEventListener('resize', adjustLayout);
+        document.addEventListener('DOMContentLoaded', adjustLayout);
+    </script>
+</body>
+</html>

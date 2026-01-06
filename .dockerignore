@@ -1,0 +1,52 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Environment
+.env
+.env.*
+
+# Dependencies
+/node_modules
+/vendor
+
+# Build artifacts
+/public/hot
+/public/storage
+/public/build
+
+# Storage (keep structure, exclude contents)
+/storage/*.key
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+!/storage/framework/cache/.gitignore
+!/storage/framework/sessions/.gitignore
+!/storage/framework/testing/.gitignore
+!/storage/framework/views/.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.phpunit.result.cache
+/tests
+
+# Documentation
+README.md
+*.md
+
+# Laravel
+/bootstrap/cache/*
+!/bootstrap/cache/.gitignore
