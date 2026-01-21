@@ -133,74 +133,62 @@ class RiwayatAntreanResource extends Resource
                                 </h3>
                                 <p class="text-sm text-green-700 dark:text-green-300">
                                     Halaman ini menampilkan semua antrean yang sudah <strong class="text-green-800 dark:text-green-200">selesai</strong>. 
-                                    Data di sini bersifat read-only dan digunakan untuk tracking history servis.
+                                    Default: tampilkan riwayat hari ini. Data bersifat read-only untuk tracking history servis.
                                 </p>
                             </div>
 
-                            <!-- Grid Layout -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <!-- Informasi Tambahan -->
-                                <div class="space-y-3">
-                                    <h4 class="font-semibold text-gray-900 dark:text-white">Kolom Tambahan</h4>
-                                    <div class="space-y-2">
-                                        <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                            <i class="fas fa-play-circle text-blue-500 dark:text-blue-400 flex-shrink-0"></i>
-                                            <span class="text-sm text-gray-700 dark:text-gray-300"><strong>Waktu Mulai</strong> - Kapan servis dimulai</span>
-                                        </div>
-                                        <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                            <i class="fas fa-flag-checkered text-green-500 dark:text-green-400 flex-shrink-0"></i>
-                                            <span class="text-sm text-gray-700 dark:text-gray-300"><strong>Waktu Selesai</strong> - Kapan servis berakhir</span>
-                                        </div>
-                                        <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                            <i class="fas fa-clock text-purple-500 dark:text-purple-400 flex-shrink-0"></i>
-                                            <span class="text-sm text-gray-700 dark:text-gray-300"><strong>Durasi</strong> - Lama pengerjaan servis</span>
-                                        </div>
-                                    </div>
+                            <!-- Informasi Kolom -->
+                            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                                <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-table text-blue-600 dark:text-blue-400"></i>
+                                    Informasi yang Ditampilkan
+                                </h4>
+                                <div class="grid grid-cols-2 gap-2 text-sm">
+                                    <div class="p-2 bg-white dark:bg-gray-800 rounded-lg">📋 No. Antrean</div>
+                                    <div class="p-2 bg-white dark:bg-gray-800 rounded-lg">👤 Pelanggan</div>
+                                    <div class="p-2 bg-white dark:bg-gray-800 rounded-lg">🚗 Plat Nomor</div>
+                                    <div class="p-2 bg-white dark:bg-gray-800 rounded-lg">🔧 Layanan</div>
+                                    <div class="p-2 bg-white dark:bg-gray-800 rounded-lg">👷 Mekanik</div>
+                                    <div class="p-2 bg-white dark:bg-gray-800 rounded-lg">📅 Waktu Daftar</div>
                                 </div>
+                            </div>
 
-                                <!-- Actions Section -->
-                                <div class="space-y-3">
-                                    <h4 class="font-semibold text-gray-900 dark:text-white">Tombol Aksi</h4>
-                                    <div class="space-y-2">
-
-                                        <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                            <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded flex-shrink-0">Detail</span>
-                                            <span class="text-sm text-gray-700 dark:text-gray-300">Lihat informasi lengkap antrean</span>
-                                        </div>
-                                        <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                            <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs rounded flex-shrink-0">Cetak</span>
-                                            <span class="text-sm text-gray-700 dark:text-gray-300">Cetak ulang bukti antrean</span>
-                                        </div>
+                            <!-- Tombol Aksi -->
+                            <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                                <h4 class="font-semibold text-purple-900 dark:text-purple-100 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-mouse-pointer text-purple-600 dark:text-purple-400"></i>
+                                    Tombol Aksi
+                                </h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                        <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded flex-shrink-0">Detail</span>
+                                        <span class="text-gray-700 dark:text-gray-300">Lihat informasi lengkap antrean (pelanggan, kendaraan, layanan, mekanik, durasi)</span>
                                     </div>
                                 </div>
                             </div>
 
-
-
-                            <!-- Filter & Pencarian -->
-                            <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
-                                <h4 class="font-semibold text-purple-900 dark:text-purple-100 mb-3 flex items-center gap-2">
-                                    <i class="fas fa-search text-purple-600 dark:text-purple-400"></i>
-                                    Filter & Pencarian
+                            <!-- Filter -->
+                            <div class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-filter text-gray-600 dark:text-gray-400"></i>
+                                    Filter Tersedia
                                 </h4>
-                                <div class="text-sm text-purple-700 dark:text-purple-300">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        <div class="p-2 bg-white dark:bg-gray-800 rounded-lg">
-                                            <strong class="text-purple-800 dark:text-purple-200">Filter Tanggal</strong>
-                                            <p class="text-xs text-purple-600 dark:text-purple-400 mt-1">Cari berdasarkan rentang tanggal selesai</p>
-                                        </div>
-                                        <div class="p-2 bg-white dark:bg-gray-800 rounded-lg">
-                                            <strong class="text-purple-800 dark:text-purple-200">Filter Mekanik</strong>
-                                            <p class="text-xs text-purple-600 dark:text-purple-400 mt-1">Lihat antrean berdasarkan mekanik</p>
-                                        </div>
-                                        <div class="p-2 bg-white dark:bg-gray-800 rounded-lg">
-                                            <strong class="text-purple-800 dark:text-purple-200">Search</strong>
-                                            <p class="text-xs text-purple-600 dark:text-purple-400 mt-1">Cari nama pelanggan atau plat nomor</p>
-                                        </div>
-                                        <div class="p-2 bg-white dark:bg-gray-800 rounded-lg">
-                                            <strong class="text-purple-800 dark:text-purple-200">Sort</strong>
-                                            <p class="text-xs text-purple-600 dark:text-purple-400 mt-1">Default urutkan dari yang terbaru selesai</p>
-                                        </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                    <div class="p-2 bg-white dark:bg-gray-700 rounded-lg">
+                                        <strong class="text-gray-800 dark:text-gray-200">📅 Hari Ini Saja</strong>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Default aktif</p>
+                                    </div>
+                                    <div class="p-2 bg-white dark:bg-gray-700 rounded-lg">
+                                        <strong class="text-gray-800 dark:text-gray-200">📆 Range Waktu Selesai</strong>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Cari berdasarkan rentang tanggal selesai</p>
+                                    </div>
+                                    <div class="p-2 bg-white dark:bg-gray-700 rounded-lg">
+                                        <strong class="text-gray-800 dark:text-gray-200">👷 Filter Mekanik</strong>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Lihat antrean berdasarkan mekanik</p>
+                                    </div>
+                                    <div class="p-2 bg-white dark:bg-gray-700 rounded-lg">
+                                        <strong class="text-gray-800 dark:text-gray-200">🔍 Search</strong>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Cari nama pelanggan atau plat nomor</p>
                                     </div>
                                 </div>
                             </div>
@@ -209,28 +197,24 @@ class RiwayatAntreanResource extends Resource
                             <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
                                 <h4 class="font-semibold text-orange-900 dark:text-orange-100 mb-3 flex items-center gap-2">
                                     <i class="fas fa-tasks text-orange-600 dark:text-orange-400"></i>
-                                    Kapan Menggunakan Riwayat?
+                                    Kegunaan Riwayat
                                 </h4>
-                                <ul class="text-sm text-orange-700 dark:text-orange-300 space-y-2">
-                                    <li class="flex items-start gap-2">
-                                        <i class="fas fa-chart-line text-orange-500 dark:text-orange-400 mt-0.5 flex-shrink-0"></i>
-                                        <span><strong class="text-orange-800 dark:text-orange-200">Melacak history servis</strong> pelanggan</span>
+                                <ul class="text-sm text-orange-700 dark:text-orange-300 space-y-1">
+                                    <li class="flex items-center gap-2">
+                                        <i class="fas fa-check text-orange-500 text-xs"></i>
+                                        <span>Melacak history servis pelanggan</span>
                                     </li>
-                                    <li class="flex items-start gap-2">
-                                        <i class="fas fa-user-cog text-orange-500 dark:text-orange-400 mt-0.5 flex-shrink-0"></i>
-                                        <span><strong class="text-orange-800 dark:text-orange-200">Analisis kinerja</strong> mekanik dan layanan</span>
+                                    <li class="flex items-center gap-2">
+                                        <i class="fas fa-check text-orange-500 text-xs"></i>
+                                        <span>Analisis kinerja mekanik</span>
                                     </li>
-                                    <li class="flex items-start gap-2">
-                                        <i class="fas fa-file-medical text-orange-500 dark:text-orange-400 mt-0.5 flex-shrink-0"></i>
-                                        <span><strong class="text-orange-800 dark:text-orange-200">Rekam medis kendaraan</strong> yang pernah diservis</span>
+                                    <li class="flex items-center gap-2">
+                                        <i class="fas fa-check text-orange-500 text-xs"></i>
+                                        <span>Rekam medis kendaraan</span>
                                     </li>
-                                    <li class="flex items-start gap-2">
-                                        <i class="fas fa-redo text-orange-500 dark:text-orange-400 mt-0.5 flex-shrink-0"></i>
-                                        <span><strong class="text-orange-800 dark:text-orange-200">Pelanggan repeat</strong> yang ingin servis lagi</span>
-                                    </li>
-                                    <li class="flex items-start gap-2">
-                                        <i class="fas fa-database text-orange-500 dark:text-orange-400 mt-0.5 flex-shrink-0"></i>
-                                        <span><strong class="text-orange-800 dark:text-orange-200">Cadangkan data</strong> untuk laporan dan audit</span>
+                                    <li class="flex items-center gap-2">
+                                        <i class="fas fa-check text-orange-500 text-xs"></i>
+                                        <span>Data untuk laporan dan audit</span>
                                     </li>
                                 </ul>
                             </div>

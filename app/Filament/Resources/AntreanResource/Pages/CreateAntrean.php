@@ -23,111 +23,142 @@ class CreateAntrean extends CreateRecord
     protected function handleRecordCreation(array $data): Antrean
     {
         return DB::transaction(function () use ($data) {
-            try {
-                // 1. Handle Pelanggan
-                if (!empty($data['pengunjung_id'])) {
-                    // Pelanggan existing terdeteksi dari auto-fill
-                    $pelangganLama = Pengunjung::find($data['pengunjung_id']);
-                    
-                    // Cek apakah kasir mengubah data pelanggan
+            // =====================================
+            // VALIDASI INPUT
+            // =====================================
+            
+            // Validasi nama pelanggan
+            if (empty($data['nama_pengunjung'])) {
+                Notification::make()
+                    ->danger()
+                    ->title('❌ Validasi Gagal')
+                    ->body('Nama pelanggan wajib diisi!')
+                    ->persistent()
+                    ->send();
+                throw new \Illuminate\Validation\ValidationException(
+                    validator([], ['nama_pengunjung' => 'required'])
+                );
+            }
+
+            // Validasi jenis kendaraan
+            if (empty($data['jenis_kendaraan_id']) && empty($data['kendaraan_id'])) {
+                Notification::make()
+                    ->danger()
+                    ->title('❌ Validasi Gagal')
+                    ->body('Jenis kendaraan wajib dipilih!')
+                    ->persistent()
+                    ->send();
+                throw new \Illuminate\Validation\ValidationException(
+                    validator([], ['jenis_kendaraan_id' => 'required'])
+                );
+            }
+
+            // Ambil jenis layanan (opsional)
+            $jenisLayananRaw = $data['jenis_layanan'] ?? $this->jenisLayananString ?? '';
+
+            // =====================================
+            // 1. HANDLE PELANGGAN
+            // =====================================
+            $pengunjung = null;
+            
+            if (!empty($data['pengunjung_id'])) {
+                $pelangganLama = Pengunjung::find($data['pengunjung_id']);
+                
+                if ($pelangganLama) {
                     $dataChanged = (
                         $pelangganLama->nama_pengunjung !== $data['nama_pengunjung'] ||
                         $pelangganLama->nomor_tlp !== $data['nomor_tlp'] ||
                         ($data['alamat'] ?? '') !== ($pelangganLama->alamat ?? '')
                     );
                     
-                    if ($dataChanged) {
-                        // Data berubah → Buat pelanggan BARU
-                        $pengunjung = Pengunjung::create([
+                    $pengunjung = $dataChanged 
+                        ? Pengunjung::create([
                             'nama_pengunjung' => $data['nama_pengunjung'],
                             'nomor_tlp' => $data['nomor_tlp'],
                             'alamat' => $data['alamat'] ?? null,
-                        ]);
-                    } else {
-                        // Data sama → Gunakan pelanggan lama
-                        $pengunjung = $pelangganLama;
-                    }
-                } else {
-                    // Pelanggan baru (tidak ada auto-detection)
-                    $pengunjung = Pengunjung::create([
-                        'nama_pengunjung' => $data['nama_pengunjung'],
-                        'nomor_tlp' => $data['nomor_tlp'],
-                        'alamat' => $data['alamat'] ?? null,
-                    ]);
+                        ])
+                        : $pelangganLama;
                 }
+            }
+            
+            if (!$pengunjung) {
+                $pengunjung = Pengunjung::create([
+                    'nama_pengunjung' => $data['nama_pengunjung'],
+                    'nomor_tlp' => $data['nomor_tlp'],
+                    'alamat' => $data['alamat'] ?? null,
+                ]);
+            }
 
-                // 2. Handle Kendaraan
-                if (!empty($data['kendaraan_id'])) {
-                    // Kendaraan existing - TIDAK DI-CREATE ULANG
-                    $kendaraan = Kendaraan::find($data['kendaraan_id']);
-                    
-                    // Kendaraan lama tetap terlink pada record-nya
-                    // TIDAK ada update kendaraan
-                } else {
-                    // Kendaraan baru
+            // =====================================
+            // 2. HANDLE KENDARAAN
+            // =====================================
+            $kendaraan = !empty($data['kendaraan_id']) 
+                ? Kendaraan::find($data['kendaraan_id']) 
+                : null;
+            
+            if (!$kendaraan) {
+                try {
                     $kendaraan = Kendaraan::create([
                         'pengunjung_id' => $pengunjung->id,
-                        'nomor_plat' => $data['nomor_plat'] ?? 'TANPA-PLAT',
+                        'nomor_plat' => $data['nomor_plat'] ?? 'TP-' . date('ymd') . '-' . time(),
                         'merk' => $data['merk'] ?? null,
                         'jenis_kendaraan_id' => $data['jenis_kendaraan_id'],
                     ]);
-                }
-
-                // Validasi kendaraan dan pengunjung
-                if (!$kendaraan) {
-                    throw new \Exception('Kendaraan tidak ditemukan atau gagal dibuat');
-                }
-
-                if (!$pengunjung) {
-                    throw new \Exception('Pelanggan tidak ditemukan atau gagal dibuat');
-                }
-
-                // 3. Ambil SEMUA layanan berdasarkan jenis layanan yang dipilih
-                $jenisLayananRaw = $data['jenis_layanan'] ?? $this->jenisLayananString ?? '';
-                $selectedJenisLayanan = !empty($jenisLayananRaw) ? explode(',', $jenisLayananRaw) : [];
-                $allLayananIds = [];
-
-                if (!empty($selectedJenisLayanan)) {
-                    $jenisKendaraanId = $kendaraan->jenis_kendaraan_id;
-
-                    foreach ($selectedJenisLayanan as $jenis) {
-                        $query = Layanan::where('jenis_layanan', $jenis);
-                        
-                        if ($jenisKendaraanId) {
-                            $query->whereJsonContains('jenis_kendaraan_akses', (int) $jenisKendaraanId);
-                        }
-                        
-                        $layananIds = $query->pluck('id')->toArray();
-                        $allLayananIds = array_merge($allLayananIds, $layananIds);
+                } catch (\Illuminate\Database\QueryException $e) {
+                    if ($e->errorInfo[1] == 1062) {
+                        Notification::make()
+                            ->danger()
+                            ->title('❌ Plat Nomor Sudah Terdaftar')
+                            ->body('Plat nomor "' . ($data['nomor_plat'] ?? '') . '" sudah terdaftar. Gunakan plat nomor yang berbeda atau kosongkan.')
+                            ->persistent()
+                            ->send();
+                        throw new \Illuminate\Validation\ValidationException(
+                            validator([], ['nomor_plat' => 'unique'])
+                        );
                     }
-
-                    $allLayananIds = array_unique($allLayananIds);
+                    throw $e;
                 }
-
-                // 4. Buat antrean
-                $antrean = Antrean::create([
-                    'kendaraan_id' => $kendaraan->id,
-                    'pengunjung_id' => $pengunjung->id,
-                    'status' => 'Menunggu',
-                ]);
-
-                // 5. Attach SEMUA layanan dari jenis yang dipilih
-                if (!empty($allLayananIds)) {
-                    $antrean->layanan()->attach($allLayananIds);
-                }
-
-                // 6. Generate nomor antrean
-                if (!$antrean->nomor_antrean) {
-                    $antrean->generateNomorAntrean();
-                    $antrean->save();
-                }
-
-                return $antrean;
-
-            } catch (\Exception $e) {
-                \Log::error('Error creating antrean: ' . $e->getMessage());
-                throw $e;
             }
+
+            // =====================================
+            // 3. AMBIL LAYANAN (OPSIONAL)
+            // =====================================
+            $allLayananIds = [];
+            
+            if (!empty($jenisLayananRaw)) {
+                foreach (explode(',', $jenisLayananRaw) as $jenis) {
+                    if (empty(trim($jenis))) continue;
+                    
+                    $query = Layanan::where('jenis_layanan', trim($jenis));
+                    
+                    if ($kendaraan->jenis_kendaraan_id) {
+                        $query->whereJsonContains('jenis_kendaraan_akses', (int) $kendaraan->jenis_kendaraan_id);
+                    }
+                    
+                    $allLayananIds = array_merge($allLayananIds, $query->pluck('id')->toArray());
+                }
+                $allLayananIds = array_unique($allLayananIds);
+            }
+
+            // =====================================
+            // 4. BUAT ANTREAN
+            // =====================================
+            $antrean = Antrean::create([
+                'kendaraan_id' => $kendaraan->id,
+                'pengunjung_id' => $pengunjung->id,
+                'status' => 'Menunggu',
+            ]);
+
+            if (!empty($allLayananIds)) {
+                $antrean->layanan()->attach($allLayananIds);
+            }
+
+            if (!$antrean->nomor_antrean) {
+                $antrean->generateNomorAntrean();
+                $antrean->save();
+            }
+
+            return $antrean;
         });
     }
 
@@ -191,33 +222,35 @@ class CreateAntrean extends CreateRecord
 
     protected function beforeCreate(): void
     {
-        // Validasi layanan
-
-        
-        // Validasi duplikasi plat (jika kendaraan baru)
         $data = $this->form->getState();
         
-        if (empty($data['kendaraan_id'])) {
-            $existingKendaraan = Kendaraan::where('nomor_plat', $data['nomor_plat'])->first();
-            
-            if ($existingKendaraan) {
-                Notification::make()
-                    ->warning()
-                    ->title('Plat Nomor Sudah Terdaftar')
-                    ->body('Plat nomor "' . $data['nomor_plat'] . '" sudah terdaftar atas nama ' . $existingKendaraan->pengunjung->nama_pengunjung . '. Data kendaraan akan menggunakan yang sudah ada.')
-                    ->persistent()
-                    ->send();
-                
-                // Auto-set ke kendaraan existing
-                $this->form->fill([
-                    'kendaraan_id' => $existingKendaraan->id,
-                    'merk' => $existingKendaraan->merk,
-                    'jenis_kendaraan_id' => $existingKendaraan->jenis_kendaraan_id,
-                ]);
-            }
+        // Skip jika nomor plat kosong atau sudah ada kendaraan_id
+        if (empty($data['nomor_plat']) || !empty($data['kendaraan_id'])) {
+            return;
         }
-
+        
+        // Cek duplikasi plat nomor
+        $existingKendaraan = Kendaraan::where('nomor_plat', $data['nomor_plat'])->first();
+        
+        if ($existingKendaraan) {
+            $namaOwner = $existingKendaraan->pengunjung?->nama_pengunjung ?? 'Tidak diketahui';
+            
+            Notification::make()
+                ->warning()
+                ->title('⚠️ Plat Nomor Sudah Terdaftar')
+                ->body('Plat nomor "' . $data['nomor_plat'] . '" sudah terdaftar atas nama ' . $namaOwner . '. Data kendaraan akan menggunakan yang sudah ada.')
+                ->persistent()
+                ->send();
+            
+            // Auto-set ke kendaraan existing
+            $this->form->fill([
+                'kendaraan_id' => $existingKendaraan->id,
+                'merk' => $existingKendaraan->merk,
+                'jenis_kendaraan_id' => $existingKendaraan->jenis_kendaraan_id,
+            ]);
+        }
     }
+
 
     protected function getFormActions(): array
     {

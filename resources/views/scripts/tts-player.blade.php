@@ -2,8 +2,28 @@
     document.addEventListener('livewire:initialized', () => {
         console.log('TTS Player Diinisialisasi.');
 
-        // Fungsi TTS dengan opsi repeat
-        const playSound = (textParts, repeat = 1) => {
+        // Mapping digit ke kata Indonesia
+        const digitWords = {
+            '0': 'nol',
+            '1': 'satu',
+            '2': 'dua',
+            '3': 'tiga',
+            '4': 'empat',
+            '5': 'lima',
+            '6': 'enam',
+            '7': 'tujuh',
+            '8': 'delapan',
+            '9': 'sembilan'
+        };
+
+        // Format nomor antrean menjadi kata-kata (contoh: "15" → "satu lima")
+        const formatNomorAntrean = (nomor) => {
+            if (!nomor) return 'nol';
+            return nomor.toString().split('').map(digit => digitWords[digit] || digit).join(' ');
+        };
+
+        // Fungsi TTS dengan opsi repeat - satu kalimat utuh
+        const playSound = (text, repeat = 1) => {
             if (!('speechSynthesis' in window)) {
                 console.error('API Speech Synthesis tidak didukung oleh browser ini.');
                 return;
@@ -14,45 +34,25 @@
 
             let count = 0;
 
-            const speakSequence = () => {
+            const speakOnce = () => {
                 if (count >= repeat) return;
 
-                let idx = 0;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'id-ID';
+                utterance.rate = 0.9; // sedikit lebih lambat agar jelas terdengar
+                utterance.pitch = 1;
 
-                const speakNext = () => {
-                    if (idx >= textParts.length) {
-                        count++;
-                        if (count < repeat) {
-                            setTimeout(speakSequence, 1000); // jeda 1 detik antar repeat
-                        }
-                        return;
+                utterance.onend = () => {
+                    count++;
+                    if (count < repeat) {
+                        setTimeout(speakOnce, 1500); // jeda 1.5 detik antar pengulangan
                     }
-
-                    const utterance = new SpeechSynthesisUtterance(textParts[idx]);
-                    utterance.lang = 'id-ID';
-                    utterance.rate = 1.5; // lebih cepat
-                    utterance.pitch = 1;
-
-                    utterance.onend = () => {
-                        idx++;
-                        setTimeout(speakNext, 500); // jeda 0.5 detik antar bagian
-                    };
-
-                    window.speechSynthesis.speak(utterance);
                 };
 
-                speakNext();
+                window.speechSynthesis.speak(utterance);
             };
 
-            speakSequence();
-        };
-
-        // Format angka → dibaca digit per digit, dengan jeda
-        const formatNomorAntrean = (nomor) => {
-            if (!nomor) return ['nol'];
-
-            // Pecah jadi array: ["1", "5"] dst
-            return nomor.toString().split('').map(digit => digit === '0' ? 'nol' : digit);
+            speakOnce();
         };
 
         // Listener Livewire Event
@@ -60,17 +60,13 @@
             console.log('Event "playTtsEvent" diterima:', event.detail);
 
             if (event.detail.nomor_antrean) {
-                const digits = formatNomorAntrean(event.detail.nomor_antrean);
+                const nomorKata = formatNomorAntrean(event.detail.nomor_antrean);
 
-                // Buat sequence ucapan:
-                const textParts = [
-                    "Nomor antrean", 
-                    ...digits, // disebut pelan satu per satu
-                    "telah selesai."
-                ];
+                // Gabungkan menjadi satu kalimat utuh
+                const fullText = `Nomor antrean ${nomorKata}, telah selesai.`;
 
-                // Atur repeat = 2 kalau mau dipanggil 2 kali
-                playSound(textParts, 2);
+                // Diulang 2 kali
+                playSound(fullText, 2);
             } else {
                 console.warn('Event "playTtsEvent" diterima tanpa nomor antrean.');
             }

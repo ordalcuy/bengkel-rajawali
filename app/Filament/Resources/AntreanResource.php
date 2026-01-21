@@ -526,9 +526,8 @@ class AntreanResource extends Resource
 
                             TextInput::make('nomor_plat')
                                 ->label('Plat Nomor')
-                                ->required()
                                 ->maxLength(15)
-                                ->placeholder('Contoh: B 1234 ABC')
+                                ->placeholder('Contoh: B 1234 ABC atau kosongkan jika tidak ada')
                                 ->live(debounce: 500)
                                 ->afterStateUpdated(function ($state, Set $set) {
                                     if (empty($state)) {
@@ -559,7 +558,7 @@ class AntreanResource extends Resource
                                 })
                                 ->suffixIcon(fn ($get) => $get('kendaraan_id') ? 'heroicon-o-check-circle' : 'heroicon-o-magnifying-glass')
                                 ->suffixIconColor(fn ($get) => $get('kendaraan_id') ? 'success' : 'gray')
-                                ->helperText('Ketik plat nomor - data akan otomatis terisi jika sudah terdaftar')
+                                ->helperText('Opsional - kosongkan jika tidak ada/lupa plat. Data otomatis terisi jika sudah terdaftar')
                                 ->columnSpanFull(),
                             
                             Select::make('merk')
@@ -1088,28 +1087,95 @@ class AntreanResource extends Resource
                                     Tentang Antrean Aktif
                                 </h3>
                                 <p class="text-sm text-blue-700 dark:text-blue-300">
-                                    Halaman ini menampilkan antrean yang sedang berjalan. Default: antrean hari ini. Gunakan filter untuk melihat antrean kemarin/menginap.
+                                    Halaman ini menampilkan antrean yang sedang berjalan (status Menunggu atau Dikerjakan). 
+                                    Default: antrean hari ini. Gunakan filter untuk melihat semua antrean aktif.
                                 </p>
                             </div>
 
-                            <!-- Sistem Tanggal Operasional -->
+                            <!-- Alur Kerja -->
                             <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                                 <h4 class="font-semibold text-green-900 dark:text-green-100 mb-3 flex items-center gap-2">
-                                    <i class="fas fa-calendar-day text-green-600 dark:text-green-400"></i>
-                                    Sistem Tanggal Operasional
+                                    <i class="fas fa-project-diagram text-green-600 dark:text-green-400"></i>
+                                    Alur Kerja Antrean
                                 </h4>
                                 <div class="space-y-2 text-sm text-green-700 dark:text-green-300">
                                     <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
-                                        <span class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></span>
-                                        <span><strong>Default:</strong> Hanya tampilkan antrean hari ini</span>
+                                        <span class="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">1</span>
+                                        <span><strong>Menunggu</strong> → Antrean baru, belum ada mekanik</span>
                                     </div>
                                     <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
-                                        <span class="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></span>
-                                        <span><strong>Filter "Tampilkan Semua Aktif":</strong> Lihat antrean dari semua tanggal yang belum selesai</span>
+                                        <span class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">2</span>
+                                        <span><strong>Dikerjakan</strong> → Mekanik sudah ditugaskan, sedang proses</span>
                                     </div>
                                     <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
-                                        <span class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
-                                        <span><strong>Badge "Menginap":</strong> Antrean dari hari sebelumnya akan ditandai khusus</span>
+                                        <span class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">3</span>
+                                        <span><strong>Selesai</strong> → Pindah ke Riwayat Antrean</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tombol Aksi -->
+                            <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                                <h4 class="font-semibold text-purple-900 dark:text-purple-100 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-mouse-pointer text-purple-600 dark:text-purple-400"></i>
+                                    Tombol Aksi
+                                </h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                        <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded flex-shrink-0">Tugaskan</span>
+                                        <span class="text-gray-700 dark:text-gray-300">Pilih mekanik untuk mengerjakan (status: Menunggu)</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                        <span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded flex-shrink-0">Selesaikan</span>
+                                        <span class="text-gray-700 dark:text-gray-300">Tandai selesai + kirim WA (status: Dikerjakan)</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                        <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs rounded flex-shrink-0">Edit</span>
+                                        <span class="text-gray-700 dark:text-gray-300">Ubah data antrean</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Fitur Notifikasi -->
+                            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                                <h4 class="font-semibold text-orange-900 dark:text-orange-100 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-bell text-orange-600 dark:text-orange-400"></i>
+                                    Fitur Notifikasi
+                                </h4>
+                                <div class="space-y-2 text-sm text-orange-700 dark:text-orange-300">
+                                    <div class="flex items-start gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
+                                        <i class="fas fa-volume-up text-orange-500 mt-0.5 flex-shrink-0"></i>
+                                        <span><strong>Suara TTS:</strong> Pengumuman otomatis saat antrean selesai</span>
+                                    </div>
+                                    <div class="flex items-start gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
+                                        <i class="fab fa-whatsapp text-green-500 mt-0.5 flex-shrink-0"></i>
+                                        <span><strong>WhatsApp:</strong> Kirim notifikasi ke pelanggan saat selesai</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Filter -->
+                            <div class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-filter text-gray-600 dark:text-gray-400"></i>
+                                    Filter Tersedia
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                    <div class="p-2 bg-white dark:bg-gray-700 rounded-lg">
+                                        <strong class="text-gray-800 dark:text-gray-200">📅 Hari Ini Saja</strong>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Default aktif, hanya tampilkan hari ini</p>
+                                    </div>
+                                    <div class="p-2 bg-white dark:bg-gray-700 rounded-lg">
+                                        <strong class="text-gray-800 dark:text-gray-200">📆 Range Tanggal</strong>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Filter berdasarkan rentang tanggal</p>
+                                    </div>
+                                    <div class="p-2 bg-white dark:bg-gray-700 rounded-lg">
+                                        <strong class="text-gray-800 dark:text-gray-200">🔄 Status</strong>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Menunggu atau Dikerjakan</p>
+                                    </div>
+                                    <div class="p-2 bg-white dark:bg-gray-700 rounded-lg">
+                                        <strong class="text-gray-800 dark:text-gray-200">🔍 Search</strong>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Cari nama, plat nomor, dll</p>
                                     </div>
                                 </div>
                             </div>
