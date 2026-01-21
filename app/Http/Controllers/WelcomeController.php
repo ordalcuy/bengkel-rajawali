@@ -14,7 +14,7 @@ class WelcomeController extends Controller
     {
         // Ambil data antrean aktif HARI INI untuk ditampilkan di tabel
         // Optimasi: hanya eager load relasi yang benar-benar digunakan + limit 50
-        $antreanAktif = Antrean::with(['karyawan:id,nama_karyawan', 'layanan:id,jenis_layanan', 'kendaraan:id,nomor_plat,merk,tipe'])
+        $antreanAktif = Antrean::with(['karyawan:id,nama_karyawan', 'layanan:id,jenis_layanan', 'kendaraan:id,nomor_plat,merk'])
             ->select('id', 'nomor_antrean', 'status', 'waktu_mulai', 'created_at', 'karyawan_id', 'kendaraan_id')
             ->whereIn('status', ['Menunggu', 'Dikerjakan', 'Check-in'])
             ->whereDate('created_at', Carbon::today())
