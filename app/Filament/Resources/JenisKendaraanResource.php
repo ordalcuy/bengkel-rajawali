@@ -34,8 +34,10 @@ class JenisKendaraanResource extends Resource
     return $form
         ->schema([
             Forms\Components\TextInput::make('nama_jenis')
+                ->label('Nama Jenis Kendaraan')
                 ->required()
-                ->maxLength(255),
+                ->maxLength(255)
+                ->placeholder('Contoh: Matic, Bebek, Sport >250cc'),
             Forms\Components\Textarea::make('keterangan')
                 ->maxLength(65535)
                 ->columnSpanFull(),

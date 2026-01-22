@@ -467,7 +467,7 @@
                         </div>
                         <p class="text-xs text-slate-500 font-medium uppercase">Customer Service</p>
                         <p class="text-slate-800 font-bold text-sm mt-1">{{ config('bengkel.telepon', '0812-3456-7890') }}</p>
-                        <p class="text-xs text-blue-500 mt-1 underline cursor-pointer">Chat WhatsApp</p>
+                        
                     </div>
                 </div>
             </div>
@@ -596,7 +596,7 @@
                  <div class="col-span-1 md:col-span-1">
                      <div class="flex items-center gap-2 mb-4">
                          <div class="bg-blue-600 text-white p-1 rounded">
-                             <span class="font-bold text-lg">RK</span>
+                             <span class="font-bold text-lg">RM</span>
                          </div>
                          <h3 class="font-bold text-xl text-slate-800">{{ config('bengkel.nama', 'Rajawali Bengkel') }}</h3>
                      </div>
@@ -626,7 +626,7 @@
         </section>
         
         <footer class="mt-12 pt-8 border-t border-slate-200 text-center text-xs text-slate-400">
-            <p>&copy; {{ date('Y') }} {{ config('bengkel.nama', 'Bengkel Kita') }}. All rights reserved. Powered by Laravel & Tailwind.</p>
+            <p>&copy; {{ date('Y') }} {{ config('bengkel.nama', 'Bengkel Kita') }}. All rights reserved. Created by <a href="https://github.com/arifhidayat25">Achmad Arif Hidayat</a></p>
         </footer>
     </div>
 

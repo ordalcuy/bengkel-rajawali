@@ -527,16 +527,67 @@ class AntreanResource extends Resource
                             TextInput::make('nomor_plat')
                                 ->label('Plat Nomor')
                                 ->maxLength(15)
-                                ->placeholder('Contoh: B 1234 ABC atau kosongkan jika tidak ada')
+                                ->placeholder('__ ____ ___')
+                                ->helperText('Format: B 1234 ABC atau AB 123 CD - otomatis diformat saat mengetik')
+                                ->extraInputAttributes([
+                                    'style' => 'text-transform: uppercase; letter-spacing: 2px; font-family: monospace;',
+                                    'x-on:input' => '
+                                        let val = $el.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+                                        let formatted = "";
+                                        let letters1 = val.match(/^[A-Z]{1,2}/);
+                                        if (letters1) {
+                                            formatted = letters1[0];
+                                            val = val.slice(letters1[0].length);
+                                            let numbers = val.match(/^[0-9]{1,4}/);
+                                            if (numbers) {
+                                                formatted += " " + numbers[0];
+                                                val = val.slice(numbers[0].length);
+                                                let letters2 = val.match(/^[A-Z]{1,3}/);
+                                                if (letters2) {
+                                                    formatted += " " + letters2[0];
+                                                }
+                                            }
+                                        }
+                                        $el.value = formatted;
+                                    ',
+                                ])
                                 ->live(debounce: 500)
+                                ->dehydrateStateUsing(function ($state) {
+                                    // Format plat nomor saat disimpan (uppercase dan spasi yang benar)
+                                    if (empty($state)) return $state;
+                                    
+                                    // Hapus semua spasi dan uppercase
+                                    $cleaned = strtoupper(preg_replace('/\s+/', '', $state));
+                                    
+                                    // Format: X/XX + 1-4 digit + 1-3 huruf (opsional)
+                                    // Contoh: B1234ABC -> B 1234 ABC, AB123CD -> AB 123 CD
+                                    if (preg_match('/^([A-Z]{1,2})(\d{1,4})([A-Z]{0,3})$/', $cleaned, $matches)) {
+                                        $prefix = $matches[1];
+                                        $numbers = $matches[2];
+                                        $suffix = $matches[3];
+                                        
+                                        return trim($prefix . ' ' . $numbers . ($suffix ? ' ' . $suffix : ''));
+                                    }
+                                    
+                                    return $state;
+                                })
                                 ->afterStateUpdated(function ($state, Set $set) {
                                     if (empty($state)) {
                                         $set('kendaraan_id', null);
                                         return;
                                     }
                                     
-                                    // Smart detection kendaraan
-                                    $kendaraan = Kendaraan::where('nomor_plat', $state)->first();
+                                    // Normalisasi plat untuk pencarian (hapus spasi, uppercase)
+                                    $normalizedPlat = strtoupper(preg_replace('/\s+/', '', $state));
+                                    
+                                    // Format ulang untuk tampilan
+                                    if (preg_match('/^([A-Z]{1,2})(\d{1,4})([A-Z]{0,3})$/', $normalizedPlat, $matches)) {
+                                        $formattedPlat = trim($matches[1] . ' ' . $matches[2] . ($matches[3] ? ' ' . $matches[3] : ''));
+                                        $set('nomor_plat', $formattedPlat);
+                                    }
+                                    
+                                    // Smart detection kendaraan - cari dengan normalisasi
+                                    $kendaraan = Kendaraan::whereRaw('REPLACE(UPPER(nomor_plat), " ", "") = ?', [$normalizedPlat])->first();
                                     
                                     if ($kendaraan) {
                                         // Auto-fill kendaraan
@@ -558,7 +609,7 @@ class AntreanResource extends Resource
                                 })
                                 ->suffixIcon(fn ($get) => $get('kendaraan_id') ? 'heroicon-o-check-circle' : 'heroicon-o-magnifying-glass')
                                 ->suffixIconColor(fn ($get) => $get('kendaraan_id') ? 'success' : 'gray')
-                                ->helperText('Opsional - kosongkan jika tidak ada/lupa plat. Data otomatis terisi jika sudah terdaftar')
+                                ->helperText('Format: AB 1234 CD atau B 123 AB - otomatis diformat. Kosongkan jika tidak ada plat.')
                                 ->columnSpanFull(),
                             
                             Select::make('merk')
@@ -593,6 +644,10 @@ class AntreanResource extends Resource
                                 ->label('Nama Lengkap')
                                 ->required()
                                 ->placeholder('Masukkan nama lengkap pelanggan')
+                                ->extraInputAttributes([
+                                    'x-on:input' => '$el.value = $el.value.replace(/[0-9]/g, "")',
+                                    'x-on:keydown' => 'if (/[0-9]/.test($event.key)) $event.preventDefault()',
+                                ])
                                 ->live(debounce: 500)
                                 ->afterStateUpdated(function ($state, Set $set, Get $get) {
                                     // Reset semua field jika nama dihapus
@@ -603,22 +658,20 @@ class AntreanResource extends Resource
                                         return;
                                     }
                                     
-                                    // Smart detection pelanggan - hanya exact match (nama lengkap)
-                                    if (empty($get('kendaraan_id'))) {
-                                        // Cari pelanggan dengan nama yang SAMA PERSIS (case-insensitive)
-                                        $pengunjung = Pengunjung::whereRaw('LOWER(nama_pengunjung) = ?', [strtolower($state)])->first();
-                                        
-                                        if ($pengunjung) {
-                                            // Auto-fill pelanggan
-                                            $set('pengunjung_id', $pengunjung->id);
-                                            $set('nomor_tlp', $pengunjung->nomor_tlp);
-                                            $set('alamat', $pengunjung->alamat ?? '');
-                                        } else {
-                                            // Nama tidak match - reset auto-fill
-                                            $set('pengunjung_id', null);
-                                            $set('nomor_tlp', '');
-                                            $set('alamat', '');
-                                        }
+                                    // Smart detection pelanggan - exact match (nama lengkap)
+                                    // Cari pelanggan dengan nama yang SAMA PERSIS (case-insensitive)
+                                    $pengunjung = Pengunjung::whereRaw('LOWER(nama_pengunjung) = ?', [strtolower($state)])->first();
+                                    
+                                    if ($pengunjung) {
+                                        // Auto-fill pelanggan
+                                        $set('pengunjung_id', $pengunjung->id);
+                                        $set('nomor_tlp', $pengunjung->nomor_tlp);
+                                        $set('alamat', $pengunjung->alamat ?? '');
+                                    } else {
+                                        // Nama tidak match - reset auto-fill
+                                        $set('pengunjung_id', null);
+                                        $set('nomor_tlp', '');
+                                        $set('alamat', '');
                                     }
                                 })
                                 ->suffixIcon(fn ($get) => $get('pengunjung_id') ? 'heroicon-o-check-circle' : 'heroicon-o-magnifying-glass')
@@ -629,9 +682,10 @@ class AntreanResource extends Resource
                             TextInput::make('nomor_tlp')
                                 ->label('Nomor Telepon')
                                 ->tel()
-                                ->numeric()
-                                ->numeric()
-                                // ->required() // Dibuat opsional
+                                ->extraInputAttributes([
+                                    'x-on:input' => '$el.value = $el.value.replace(/[^0-9]/g, "")',
+                                    'x-on:keydown' => 'if (!/[0-9]/.test($event.key) && !["Backspace","Delete","Tab","ArrowLeft","ArrowRight"].includes($event.key)) $event.preventDefault()',
+                                ])
                                 ->placeholder('Contoh: 081234567890')
                                 ->columnSpanFull(),
 

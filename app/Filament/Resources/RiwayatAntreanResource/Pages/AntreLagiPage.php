@@ -163,6 +163,10 @@ class AntreLagiPage extends Page
                                     ->label('Nama Lengkap')
                                     ->required()
                                     ->placeholder('Masukkan nama lengkap pelanggan')
+                                    ->extraInputAttributes([
+                                        'x-on:input' => '$el.value = $el.value.replace(/[0-9]/g, "")',
+                                        'x-on:keydown' => 'if (/[0-9]/.test($event.key)) $event.preventDefault()',
+                                    ])
                                     ->default($this->record->pengunjung->nama_pengunjung)
                                     ->visible(fn ($get) => $get('update_customer_info'))
                                     ->columnSpanFull(),
@@ -181,8 +185,11 @@ class AntreLagiPage extends Page
                                 TextInput::make('nomor_tlp')
                                     ->label('Nomor Telepon')
                                     ->tel()
-                                    ->numeric()
                                     ->required()
+                                    ->extraInputAttributes([
+                                        'x-on:input' => '$el.value = $el.value.replace(/[^0-9]/g, "")',
+                                        'x-on:keydown' => 'if (!/[0-9]/.test($event.key) && !["Backspace","Delete","Tab","ArrowLeft","ArrowRight"].includes($event.key)) $event.preventDefault()',
+                                    ])
                                     ->placeholder('Contoh: 081234567890')
                                     ->default($this->record->pengunjung->nomor_tlp)
                                     ->visible(fn ($get) => $get('update_customer_info'))
@@ -243,6 +250,23 @@ class AntreLagiPage extends Page
                                     ->required()
                                     ->maxLength(15)
                                     ->placeholder('Contoh: B 1234 ABC')
+                                    ->live(debounce: 500)
+                                    ->dehydrateStateUsing(function ($state) {
+                                        if (empty($state)) return $state;
+                                        $cleaned = strtoupper(preg_replace('/\s+/', '', $state));
+                                        if (preg_match('/^([A-Z]{1,2})(\d{1,4})([A-Z]{0,3})$/', $cleaned, $matches)) {
+                                            return trim($matches[1] . ' ' . $matches[2] . ($matches[3] ? ' ' . $matches[3] : ''));
+                                        }
+                                        return $state;
+                                    })
+                                    ->afterStateUpdated(function ($state, \Filament\Forms\Set $set) {
+                                        if (empty($state)) return;
+                                        $normalized = strtoupper(preg_replace('/\s+/', '', $state));
+                                        if (preg_match('/^([A-Z]{1,2})(\d{1,4})([A-Z]{0,3})$/', $normalized, $matches)) {
+                                            $set('nomor_plat', trim($matches[1] . ' ' . $matches[2] . ($matches[3] ? ' ' . $matches[3] : '')));
+                                        }
+                                    })
+                                    ->helperText('Format: AB 1234 CD - otomatis diformat')
                                     ->default($this->record->kendaraan->nomor_plat)
                                     ->visible(fn ($get) => $get('update_kendaraan') && $get('kendaraan_option') === 'existing')
                                     ->columnSpanFull(),
@@ -340,7 +364,23 @@ class AntreLagiPage extends Page
                                             ->required()
                                             ->maxLength(15)
                                             ->placeholder('Contoh: B 1234 ABC')
-                                            ->helperText('Masukkan plat nomor kendaraan baru')
+                                            ->live(debounce: 500)
+                                            ->dehydrateStateUsing(function ($state) {
+                                                if (empty($state)) return $state;
+                                                $cleaned = strtoupper(preg_replace('/\s+/', '', $state));
+                                                if (preg_match('/^([A-Z]{1,2})(\d{1,4})([A-Z]{0,3})$/', $cleaned, $matches)) {
+                                                    return trim($matches[1] . ' ' . $matches[2] . ($matches[3] ? ' ' . $matches[3] : ''));
+                                                }
+                                                return $state;
+                                            })
+                                            ->afterStateUpdated(function ($state, \Filament\Forms\Set $set) {
+                                                if (empty($state)) return;
+                                                $normalized = strtoupper(preg_replace('/\s+/', '', $state));
+                                                if (preg_match('/^([A-Z]{1,2})(\d{1,4})([A-Z]{0,3})$/', $normalized, $matches)) {
+                                                    $set('new_nomor_plat', trim($matches[1] . ' ' . $matches[2] . ($matches[3] ? ' ' . $matches[3] : '')));
+                                                }
+                                            })
+                                            ->helperText('Format: AB 1234 CD - otomatis diformat')
                                             ->columnSpanFull(),
                                         
                                         Select::make('new_merk')

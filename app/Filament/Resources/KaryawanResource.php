@@ -38,7 +38,12 @@ class KaryawanResource extends Resource
                 Forms\Components\TextInput::make('nama_karyawan')
                     ->label('Nama Karyawan')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->placeholder('Masukkan nama karyawan')
+                    ->extraInputAttributes([
+                        'x-on:input' => '$el.value = $el.value.replace(/[0-9]/g, "")',
+                        'x-on:keydown' => 'if (/[0-9]/.test($event.key)) $event.preventDefault()',
+                    ]),
                 Forms\Components\Textarea::make('alamat')
                     ->label('Alamat')
                     ->required()
@@ -46,7 +51,12 @@ class KaryawanResource extends Resource
                 Forms\Components\TextInput::make('no_tlp')
                     ->label('Nomor Telepon')
                     ->tel()
-                    ->required(),
+                    ->required()
+                    ->placeholder('Contoh: 081234567890')
+                    ->extraInputAttributes([
+                        'x-on:input' => '$el.value = $el.value.replace(/[^0-9]/g, "")',
+                        'x-on:keydown' => 'if (!/[0-9]/.test($event.key) && !["Backspace","Delete","Tab","ArrowLeft","ArrowRight"].includes($event.key)) $event.preventDefault()',
+                    ]),
                 // Sesuai kolom 'role' di diagram Anda
                 Forms\Components\Select::make('role')
                     ->label('Peran')

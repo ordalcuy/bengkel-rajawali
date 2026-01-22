@@ -279,39 +279,44 @@ class TestDataSeeder extends Seeder
         $today = Carbon::today();
         $allKaryawans = array_merge($mekaniks, $helpers);
 
-        // 1. GENERATE HISTORY NOVEMBER (Full Month)
-        $this->createNovemberHistory($kendaraans, $pengunjungs, $allKaryawans, $layanans);
+        // 1. GENERATE HISTORY NOVEMBER TAHUN LALU (5-15 antrean per hari)
+        $this->createNovemberHistory($kendaraans, $allKaryawans, $layanans);
 
-        // 2. GENERATE TODAY'S DATA (10 items)
+        // 2. GENERATE RIWAYAT 30 HARI TERAKHIR (10-20 antrean per hari)
+        $this->createRecentHistory($kendaraans, $allKaryawans, $layanans, 30);
+
+        // 3. GENERATE TODAY'S DATA (10 items aktif)
         $this->createTodaysAntrean($kendaraans, $pengunjungs, $mekaniks, $helpers, $layanans, $today);
     }
 
-    private function createNovemberHistory($kendaraans, $pengunjungs, $allKaryawans, $layanans)
+    /**
+     * Create November history from previous year
+     */
+    private function createNovemberHistory($kendaraans, $allKaryawans, $layanans)
     {
-        // November from 1st to 30th
-        $startDate = Carbon::createFromDate(null, 11, 1)->startOfDay();
-        $endDate = Carbon::createFromDate(null, 11, 30)->endOfDay();
+        $previousYear = Carbon::now()->year - 1;
+        $startDate = Carbon::createFromDate($previousYear, 11, 1)->startOfDay();
+        $endDate = Carbon::createFromDate($previousYear, 11, 30)->endOfDay();
+        
+        $this->command->info("📅 Creating November {$previousYear} history...");
 
         for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
-            // Randomly generate 5-15 antreans per day
             $dailyCount = rand(5, 15);
 
             for ($i = 1; $i <= $dailyCount; $i++) {
                 $kendaraanPilihan = $kendaraans[array_rand($kendaraans)];
                 $karyawanPilihan = $allKaryawans[array_rand($allKaryawans)];
                 
-                // Working hours 08:00 - 16:00
                 $jamMulai = $date->copy()->setTime(rand(8, 15), rand(0, 59));
                 $durasiLayanan = rand(1, 4); 
                 $waktuSelesai = $jamMulai->copy()->addHours($durasiLayanan);
 
-                // Format: A001, A002, etc. unique per day
                 $nomorAntrean = 'A' . str_pad($i, 3, '0', STR_PAD_LEFT);
 
                 $antrean = Antrean::forceCreate([
                     'nomor_antrean' => $nomorAntrean,
                     'kendaraan_id' => $kendaraanPilihan->id,
-                    'pengunjung_id' => $kendaraanPilihan->pengunjung_id, // Use direct ID from kendaraan
+                    'pengunjung_id' => $kendaraanPilihan->pengunjung_id,
                     'karyawan_id' => $karyawanPilihan->id,
                     'status' => 'Selesai',
                     'waktu_mulai' => $jamMulai,
@@ -320,14 +325,71 @@ class TestDataSeeder extends Seeder
                     'updated_at' => $waktuSelesai
                 ]);
 
-                // Attach services
                 $jumlahLayanan = rand(1, 3);
                 $layananTerpilih = collect($layanans)->random($jumlahLayanan)->pluck('id')->toArray();
                 $antrean->layanan()->sync($layananTerpilih);
             }
         }
 
-        $this->command->info("✅ Created complete history for November (A00x format)");
+        $this->command->info("✅ Created November {$previousYear} history (5-15 antrean/day)");
+    }
+
+    /**
+     * Create recent history for X days (10-20 antrean per day)
+     */
+    private function createRecentHistory($kendaraans, $allKaryawans, $layanans, $days = 30)
+    {
+        $this->command->info("📅 Creating history for last {$days} days...");
+        
+        // Mulai dari (days) hari lalu sampai kemarin
+        for ($dayOffset = $days; $dayOffset >= 1; $dayOffset--) {
+            $date = Carbon::today()->subDays($dayOffset);
+            
+            // Skip hari Minggu (optional - bisa dihapus jika bengkel buka setiap hari)
+            // if ($date->isSunday()) continue;
+            
+            // Random 10-20 antrean per hari
+            $dailyCount = rand(10, 20);
+            
+            for ($i = 1; $i <= $dailyCount; $i++) {
+                $kendaraanPilihan = $kendaraans[array_rand($kendaraans)];
+                $karyawanPilihan = $allKaryawans[array_rand($allKaryawans)];
+                
+                // Working hours 08:00 - 17:00
+                $jamMulai = $date->copy()->setTime(rand(8, 16), rand(0, 59));
+                $durasiLayanan = rand(1, 3); // 1-3 jam
+                $waktuSelesai = $jamMulai->copy()->addHours($durasiLayanan);
+                
+                // Format: A001, A002, etc. unique per day
+                $nomorAntrean = 'A' . str_pad($i, 3, '0', STR_PAD_LEFT);
+                
+                $antrean = Antrean::forceCreate([
+                    'nomor_antrean' => $nomorAntrean,
+                    'kendaraan_id' => $kendaraanPilihan->id,
+                    'pengunjung_id' => $kendaraanPilihan->pengunjung_id,
+                    'karyawan_id' => $karyawanPilihan->id,
+                    'status' => 'Selesai',
+                    'waktu_mulai' => $jamMulai,
+                    'waktu_selesai' => $waktuSelesai,
+                    'created_at' => $jamMulai,
+                    'updated_at' => $waktuSelesai
+                ]);
+                
+                // Attach 1-3 services randomly
+                $jumlahLayanan = rand(1, 3);
+                $layananTerpilih = collect($layanans)->random($jumlahLayanan)->pluck('id')->toArray();
+                $antrean->layanan()->sync($layananTerpilih);
+            }
+            
+            // Progress indicator every 7 days
+            if ($dayOffset % 7 == 0) {
+                $processed = $days - $dayOffset + 1;
+                $this->command->info("   - Processed {$processed} days...");
+            }
+        }
+        
+        $totalEstimate = $days * 15; // Average 15 per day
+        $this->command->info("✅ Created ~{$totalEstimate} antrean records for last {$days} days");
     }
 
     private function createTodaysAntrean($kendaraans, $pengunjungs, $mekaniks, $helpers, $layanans, $today)

@@ -40,6 +40,11 @@ class LayananResource extends Resource
                 ->label('Nama Layanan')
                 ->required()
                 ->maxLength(255)
+                ->placeholder('Contoh: Ganti Oli, Tune Up, dll')
+                ->extraInputAttributes([
+                    'x-on:input' => '$el.value = $el.value.replace(/[0-9]/g, "")',
+                    'x-on:keydown' => 'if (/[0-9]/.test($event.key)) $event.preventDefault()',
+                ])
                 ->unique(ignoreRecord: true)
                 ->validationMessages([
                     'unique' => 'Nama layanan ini sudah ada.',

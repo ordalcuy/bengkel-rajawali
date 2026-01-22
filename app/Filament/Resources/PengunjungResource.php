@@ -45,12 +45,22 @@ class PengunjungResource extends Resource
                 Forms\Components\TextInput::make('nama_pengunjung')
                     ->required()
                     ->maxLength(255)
-                    ->label('Nama Pelanggan'), // Tambahkan label di sini
+                    ->placeholder('Masukkan nama pelanggan')
+                    ->extraInputAttributes([
+                        'x-on:input' => '$el.value = $el.value.replace(/[0-9]/g, "")',
+                        'x-on:keydown' => 'if (/[0-9]/.test($event.key)) $event.preventDefault()',
+                    ])
+                    ->label('Nama Pelanggan'),
                 Forms\Components\TextInput::make('nomor_tlp')
                     ->tel()
                     ->required()
+                    ->extraInputAttributes([
+                        'x-on:input' => '$el.value = $el.value.replace(/[^0-9]/g, "")',
+                        'x-on:keydown' => 'if (!/[0-9]/.test($event.key) && !["Backspace","Delete","Tab","ArrowLeft","ArrowRight"].includes($event.key)) $event.preventDefault()',
+                    ])
                     ->unique(ignoreRecord: true)
-                    ->label('Nomor Telepon') // Tambahkan label di sini
+                    ->placeholder('Contoh: 081234567890')
+                    ->label('Nomor Telepon')
                     ->validationMessages([
                         'unique' => 'Nomor telepon ini sudah terdaftar.',
                     ]),
