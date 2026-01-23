@@ -131,10 +131,33 @@ class JenisKendaraanResource extends Resource
                 ->label('Hapus')
                 ->requiresConfirmation()
                 ->modalHeading('Konfirmasi Hapus Jenis Kendaraan')
-                ->modalDescription('Apakah Anda yakin ingin menghapus jenis kendaraan ini? Tindakan ini tidak dapat dibatalkan.')
+                ->modalDescription(function (JenisKendaraan $record) {
+                    $kendaraanCount = $record->kendaraans()->count();
+                    
+                    if ($kendaraanCount > 0) {
+                        return "⚠️ PERINGATAN: Terdapat {$kendaraanCount} kendaraan yang menggunakan jenis ini. Anda harus memindahkan atau menghapus kendaraan tersebut terlebih dahulu sebelum menghapus jenis kendaraan ini.";
+                    }
+                    
+                    return 'Apakah Anda yakin ingin menghapus jenis kendaraan ini? Tindakan ini tidak dapat dibatalkan.';
+                })
                 ->modalSubmitActionLabel('Ya, Hapus')
                 ->modalCancelActionLabel('Batal')
-                ->before(function (JenisKendaraan $record) {
+                ->before(function (JenisKendaraan $record, Tables\Actions\DeleteAction $action) {
+                    // Cek apakah ada kendaraan yang menggunakan jenis ini
+                    $kendaraanCount = $record->kendaraans()->count();
+                    
+                    if ($kendaraanCount > 0) {
+                        \Filament\Notifications\Notification::make()
+                            ->danger()
+                            ->title('❌ Tidak Dapat Menghapus')
+                            ->body("Jenis kendaraan \"{$record->nama_jenis}\" tidak dapat dihapus karena masih digunakan oleh {$kendaraanCount} kendaraan. Silakan pindahkan atau hapus kendaraan tersebut terlebih dahulu.")
+                            ->persistent()
+                            ->send();
+                        
+                        $action->cancel();
+                        return;
+                    }
+                    
                     // Hapus akses dari semua layanan sebelum delete
                     DB::transaction(function () use ($record) {
                         $jenisKendaraanId = (int) $record->id;
