@@ -227,7 +227,11 @@ class LaporanAntreanSelesai extends BaseWidget
                     }
                     return 'N/A';
                 })
-                ->searchable(),
+                ->searchable(query: function (Builder $query, string $search): Builder {
+                    return $query->whereHas('pengunjung', function (Builder $q) use ($search) {
+                        $q->where('nama_pengunjung', 'like', "%{$search}%");
+                    });
+                }),
 
             Tables\Columns\TextColumn::make('layanan')
                 ->label('Jenis Layanan')

@@ -1264,7 +1264,11 @@ class AntreanResource extends Resource
                         }
                         return 'Tidak diketahui';
                     })
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('pengunjung', function (Builder $q) use ($search) {
+                            $q->where('nama_pengunjung', 'like', "%{$search}%");
+                        });
+                    })
                     ->sortable()
                     ->description(fn (Antrean $record) => $record->pengunjung?->nomor_tlp ?? '-')
                     ->icon('heroicon-o-user'),
