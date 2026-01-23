@@ -17,12 +17,49 @@
             color: #000;
             background-color: #fff;
         }
+        
+        /* Wrapper untuk kedua struk */
+        .struk-wrapper {
+            width: 100%;
+        }
+        
         .container {
             width: 100%;
             padding: 10px;
             box-sizing: border-box;
             text-align: center;
-            border: 1px solid #000;
+        }
+        
+        /* Label jenis struk */
+        .struk-label {
+            background-color: #000;
+            color: #fff;
+            padding: 3px 8px;
+            font-size: 7pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            display: inline-block;
+        }
+        
+        /* Garis potong */
+        .cut-line {
+            border: none;
+            border-top: 2px dashed #000;
+            margin: 15px 0;
+            position: relative;
+        }
+        .cut-line::before {
+            content: '✂ potong di sini';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fff;
+            padding: 0 5px;
+            font-size: 6pt;
+            color: #666;
         }
         
         /* Header */
@@ -145,22 +182,29 @@
                 margin: 0;
                 padding: 0;
             }
+            .cut-line::before {
+                background: transparent;
+            }
         }
         @media screen {
             body {
                 width: 100%;
                 background-color: #333;
                 display: flex;
-                justify-content: center;
+                flex-direction: column;
+                align-items: center;
                 padding-top: 30px;
                 min-height: 100vh;
             }
-            .container {
+            .struk-wrapper {
                 width: 58mm;
                 background: white;
                 padding: 10px;
                 box-shadow: 0 4px 20px rgba(0,0,0,0.3);
                 height: fit-content;
+                margin-bottom: 20px;
+            }
+            .container {
             }
             .btn-kembali {
                 display: block;
@@ -174,74 +218,135 @@
         ← Kembali
     </a>
 
-    <div class="container">
-        <div class="header">
-            <h1>{{ config('bengkel.nama', 'BENGKEL RAJAWALI MOTOR') }}</h1>
-            <p>Jl. Mertojoyo Selatan No.4, Merjosari</p>
-            <p>Lowokwaru, Kota Malang</p>
-            <p>Telp: 0856-4552-3234</p>
+    <div class="struk-wrapper">
+        <!-- STRUK 1: PELANGGAN -->
+        <div class="container">
+            <div class="header">
+                <h1>{{ config('bengkel.nama', 'BENGKEL RAJAWALI MOTOR') }}</h1>
+                <p>Jl. Mertojoyo Selatan No.4, Merjosari</p>
+                <p>Lowokwaru, Kota Malang</p>
+                <p>Telp: 0856-4552-3234</p>
+            </div>
+
+            <div class="queue-box">
+                <div class="queue-number">{{ $antrean->nomor_antrean }}</div>
+            </div>
+
+            <div class="details">
+                <table>
+                    <tr>
+                        <td>Tanggal</td>
+                        <td>:</td>
+                        <td>{{ $antrean->created_at->format('d/m/Y') }}</td>
+                    </tr>
+                    <tr>
+                        <td>Waktu</td>
+                        <td>:</td>
+                        <td>{{ $antrean->created_at->format('H:i') }} WIB</td>
+                    </tr>
+                    <tr>
+                        <td>Pelanggan</td>
+                        <td>:</td>
+                        <td>{{ $nama_pelanggan }}</td>
+                    </tr>
+                    <tr>
+                        <td>Plat</td>
+                        <td>:</td>
+                        <td>{{ $antrean->kendaraan->nomor_plat }}</td>
+                    </tr>
+                    @if($antrean->layanan && $antrean->layanan->count() > 0)
+                    <tr>
+                        <td>Layanan</td>
+                        <td>:</td>
+                        <td>
+                            @php
+                                $jenisMap = [
+                                    'ringan' => 'Ringan',
+                                    'sedang' => 'Sedang', 
+                                    'berat' => 'Berat'
+                                ];
+                                $jenisLayanan = $antrean->layanan->pluck('jenis_layanan')
+                                    ->unique()
+                                    ->map(fn($j) => $jenisMap[$j] ?? ucfirst($j))
+                                    ->implode(', ');
+                            @endphp
+                            {{ $jenisLayanan }}
+                        </td>
+                    </tr>
+                    @endif
+                </table>
+            </div>
+
+            <div class="qr-section">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ url('/lacak-id/' . $antrean->id) }}" alt="QR Code">
+                <p>Scan untuk pantau status servis.</p>
+                <p>Cek manual melalui website:</p>
+                <p style="margin-top: 3px; font-weight: bold; font-size: 8pt;">{{ config('app.url') }}</p>
+            </div>
+
+            <div class="footer">
+                <p class="thanks">Terima Kasih</p>
+                <p>Silakan menunggu kendaraan Anda dikerjakan</p>
+            </div>
         </div>
 
-        <div class="queue-box">
-            <div class="queue-number">{{ $antrean->nomor_antrean }}</div>
-        </div>
+        <!-- GARIS POTONG -->
+        <hr class="cut-line">
 
-        <div class="details">
-            <table>
-                <tr>
-                    <td>Tanggal</td>
-                    <td>:</td>
-                    <td>{{ $antrean->created_at->format('d/m/Y') }}</td>
-                </tr>
-                <tr>
-                    <td>Waktu</td>
-                    <td>:</td>
-                    <td>{{ $antrean->created_at->format('H:i') }} WIB</td>
-                </tr>
-                <tr>
-                    <td>Pelanggan</td>
-                    <td>:</td>
-                    <td>{{ $nama_pelanggan }}</td>
-                </tr>
-                <tr>
-                    <td>Plat</td>
-                    <td>:</td>
-                    <td>{{ $antrean->kendaraan->nomor_plat }}</td>
-                </tr>
-                @if($antrean->layanan && $antrean->layanan->count() > 0)
-                <tr>
-                    <td>Layanan</td>
-                    <td>:</td>
-                    <td>
-                        @php
-                            $jenisMap = [
-                                'ringan' => 'Ringan',
-                                'sedang' => 'Sedang', 
-                                'berat' => 'Berat'
-                            ];
-                            $jenisLayanan = $antrean->layanan->pluck('jenis_layanan')
-                                ->unique()
-                                ->map(fn($j) => $jenisMap[$j] ?? ucfirst($j))
-                                ->implode(', ');
-                        @endphp
-                        {{ $jenisLayanan }}
-                    </td>
-                </tr>
-                @endif
-            </table>
-        </div>
+        <!-- STRUK 2: ARSIP BENGKEL -->
+        <div class="container">
+            <div class="header">
+                <h1>{{ config('bengkel.nama', 'BENGKEL RAJAWALI MOTOR') }}</h1>
+                <p>Jl. Mertojoyo Selatan No.4, Merjosari</p>
+                <p>Lowokwaru, Kota Malang</p>
+                <p>Telp: 0856-4552-3234</p>
+            </div>
 
-        <div class="qr-section">
-            {{-- QR Code menggunakan ID unik --}}
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ url('/lacak-id/' . $antrean->id) }}" alt="QR Code">
-            <p>Scan untuk pantau status servis.</p>
-            <p>Cek manual melalui website:</p>
-            <p style="margin-top: 3px; font-weight: bold; font-size: 8pt;">{{ config('app.url') }}</p>
-        </div>
+            <div class="queue-box">
+                <div class="queue-number">{{ $antrean->nomor_antrean }}</div>
+            </div>
 
-        <div class="footer">
-            <p class="thanks">Terima Kasih</p>
-            <p>Silakan menunggu kendaraan Anda dikerjakan</p>
+            <div class="details">
+                <table>
+                    <tr>
+                        <td>Tanggal</td>
+                        <td>:</td>
+                        <td>{{ $antrean->created_at->format('d/m/Y') }}</td>
+                    </tr>
+                    <tr>
+                        <td>Waktu</td>
+                        <td>:</td>
+                        <td>{{ $antrean->created_at->format('H:i') }} WIB</td>
+                    </tr>
+                    <tr>
+                        <td>Pelanggan</td>
+                        <td>:</td>
+                        <td>{{ $nama_pelanggan }}</td>
+                    </tr>
+                    <tr>
+                        <td>Plat</td>
+                        <td>:</td>
+                        <td>{{ $antrean->kendaraan->nomor_plat }}</td>
+                    </tr>
+                    @if($antrean->layanan && $antrean->layanan->count() > 0)
+                    <tr>
+                        <td>Layanan</td>
+                        <td>:</td>
+                        <td>{{ $jenisLayanan }}</td>
+                    </tr>
+                    @endif
+                </table>
+            </div>
+
+            <div class="qr-section">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ url('/lacak-id/' . $antrean->id) }}" alt="QR Code">
+                <p>Scan untuk pantau status servis.</p>
+            </div>
+
+            <div class="footer">
+                <p class="thanks">Terima Kasih</p>
+                <p>Silakan menunggu kendaraan Anda dikerjakan</p>
+            </div>
         </div>
     </div>
 
