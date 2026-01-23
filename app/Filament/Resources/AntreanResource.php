@@ -1408,9 +1408,10 @@ class AntreanResource extends Resource
                                                    ->max();
                                 $highestServiceType = array_search($maxLevel, $serviceLevels) ?: 'ringan';
 
-                                $query = ($highestServiceType === 'ringan')
-                                    ? Karyawan::query()->bisaDitugaskan()->whereIn('role', ['mekanik', 'helper'])
-                                    : Karyawan::query()->bisaDitugaskan()->where('role', 'mekanik');
+                                // Helper bisa mengerjakan ringan dan sedang, mekanik bisa semua
+                                $query = ($highestServiceType === 'berat')
+                                    ? Karyawan::query()->bisaDitugaskan()->where('role', 'mekanik')
+                                    : Karyawan::query()->bisaDitugaskan()->whereIn('role', ['mekanik', 'helper']);
                                     
                                 return $query->whereNotIn('id', $busyEmployeeIds)
                                     ->get()
