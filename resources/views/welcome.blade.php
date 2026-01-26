@@ -626,7 +626,7 @@
         </section>
         
         <footer class="mt-12 pt-8 border-t border-slate-200 text-center text-xs text-slate-400">
-            <p>&copy; {{ date('Y') }} {{ config('bengkel.nama', 'Bengkel Kita') }}. All rights reserved. Created by <a href="https://github.com/arifhidayat25">Achmad Arif Hidayat</a></p>
+            <p>&copy; {{ date('Y') }} {{ config('bengkel.nama', 'Bengkel Kita') }}. All rights reserved. Created by <a href="https://achmadarha.site">Achmad Arif Hidayat</a></p>
         </footer>
     </div>
 

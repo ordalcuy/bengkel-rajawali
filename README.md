@@ -31,37 +31,37 @@ Sistem ini dirancang dengan berbagai fitur canggih untuk memenuhi kebutuhan beng
 
 ## 📸 Tampilan Sistem
 
-\<table\>
-\<tr\>
-\<td align="center"\>\<b\>Panel Admin\</b\>\</td\>
-\<td align="center"\>\<b\>Dashboard Laporan (Owner)\</b\>\</td\>
-\</tr\>
-\<tr\>
-\<td\>\<img src="[https://i.imgur.com/uQW5gJ0.png](https://www.google.com/search?q=https://i.imgur.com/uQW5gJ0.png)" alt="Panel Admin"\>\</td\>
-\<td\>\<img src="[https://i.imgur.com/2Yh8V1F.png](https://www.google.com/search?q=https://i.imgur.com/2Yh8V1F.png)" alt="Dashboard Laporan"\>\</td\>
-\</tr\>
-\<tr\>
-\<td align="center"\>\<b\>Layar Panggilan Detail\</b\>\</td\>
-\<td align="center"\>\<b\>Monitor Pengerjaan Aktif\</b\>\</td\>
-\</tr\>
-\<tr\>
-\<td\>\<img src="[https://i.imgur.com/f0yN8gH.png](https://www.google.com/search?q=https://i.imgur.com/f0yN8gH.png)" alt="Layar Panggilan"\>\</td\>
-\<td\>\<img src="[https://i.imgur.com/tCjW5oA.png](https://www.google.com/search?q=https://i.imgur.com/tCjW5oA.png)" alt="Monitor Pengerjaan"\>\</td\>
-\</tr\>
-\</table\>
+<table>
+<tr>
+<td align="center"><b>Panel Admin</b></td>
+<td align="center"><b>Dashboard Laporan (Owner)</b></td>
+</tr>
+<tr>
+<td><img src="https://i.imgur.com/uQW5gJ0.png" alt="Panel Admin"></td>
+<td><img src="https://i.imgur.com/2Yh8V1F.png" alt="Dashboard Laporan"></td>
+</tr>
+<tr>
+<td align="center"><b>Layar Panggilan Detail</b></td>
+<td align="center"><b>Monitor Pengerjaan Aktif</b></td>
+</tr>
+<tr>
+<td><img src="https://i.imgur.com/f0yN8gH.png" alt="Layar Panggilan"></td>
+<td><img src="https://i.imgur.com/tCjW5oA.png" alt="Monitor Pengerjaan"></td>
+</tr>
+</table>
 
 ## 🛠️ Panduan Instalasi dan Setup
 
 Berikut adalah langkah-langkah untuk menjalankan proyek ini di lingkungan pengembangan lokal.
 
-### 1\. Prasyarat
+### 1. Prasyarat
 
   - PHP (versi 8.1+)
   - Composer
   - Node.js & NPM
   - Database (MySQL/MariaDB)
 
-### 2\. Instalasi
+### 2. Instalasi
 
 1.  **Clone repositori ini:**
 
@@ -109,7 +109,7 @@ Berikut adalah langkah-langkah untuk menjalankan proyek ini di lingkungan pengem
 
     Jika tidak, buat user pertama Anda secara manual melalui `php artisan tinker` atau fitur registrasi.
 
-### 3\. Menjalankan Aplikasi
+### 3. Menjalankan Aplikasi
 
 Anda perlu menjalankan **tiga proses** ini secara bersamaan di terminal yang berbeda.
 
