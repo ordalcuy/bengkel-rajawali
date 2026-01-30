@@ -12,106 +12,41 @@ class EditAntrean extends EditRecord
 {
     protected static string $resource = AntreanResource::class;
 
-    // Property untuk toggle jenis layanan
-    public $jenisLayananString = '';
-
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        // Set initial jenisLayananString dari jenis layanan yang sudah dipilih
+        // Pre-populate checkbox fields with existing layanan IDs
         $antrean = $this->getRecord();
-        $selectedLayanans = $antrean->layanan->pluck('jenis_layanan')->unique()->toArray();
-        $this->jenisLayananString = implode(',', $selectedLayanans);
+        $layananIds = $antrean->layanan->pluck('id');
+        
+        // Group by jenis_layanan
+        $data['layanan_ringan'] = $antrean->layanan->where('jenis_layanan', 'ringan')->pluck('id')->toArray();
+        $data['layanan_sedang'] = $antrean->layanan->where('jenis_layanan', 'sedang')->pluck('id')->toArray();
+        $data['layanan_berat'] = $antrean->layanan->where('jenis_layanan', 'berat')->pluck('id')->toArray();
 
         return $data;
     }
 
-    // Method toggle jenis layanan
-    public function toggleJenisLayanan(string $jenis): void
-    {
-        $currentValue = $this->jenisLayananString;
-        $values = $currentValue ? explode(',', $currentValue) : [];
-        
-        if (in_array($jenis, $values)) {
-            $values = array_filter($values, fn($v) => $v !== $jenis);
-        } else {
-            $values[] = $jenis;
-        }
-        
-        $this->jenisLayananString = implode(',', array_filter($values));
-        
-        // Berikan feedback visual
-        $this->dispatch('layanan-toggled', jenis: $jenis, selected: in_array($jenis, $values));
-    }
 
-    // Helper method untuk cek apakah ada layanan untuk jenis tertentu
-    public function hasLayananForJenis($jenisKendaraanId, $jenisLayanan)
-    {
-        // Jika jenis kendaraan tidak ada, tampilkan semua layanan untuk jenis tersebut
-        if (!$jenisKendaraanId) {
-            return Layanan::query()
-                ->where('jenis_layanan', $jenisLayanan)
-                ->exists();
-        }
-        
-        return Layanan::query()
-            ->where('jenis_layanan', $jenisLayanan)
-            ->whereJsonContains('jenis_kendaraan_akses', (int) $jenisKendaraanId)
-            ->exists();
-    }
-
-    // Helper method untuk get layanan by jenis
-    public function getLayananForJenis($jenisKendaraanId, $jenisLayanan)
-    {
-        // Jika jenis kendaraan tidak ada, ambil semua layanan untuk jenis tersebut
-        if (!$jenisKendaraanId) {
-            return Layanan::query()
-                ->where('jenis_layanan', $jenisLayanan)
-                ->get();
-        }
-        
-        return Layanan::query()
-            ->where('jenis_layanan', $jenisLayanan)
-            ->whereJsonContains('jenis_kendaraan_akses', (int) $jenisKendaraanId)
-            ->get();
-    }
 
     protected function handleRecordUpdate($record, array $data): Antrean
     {
-        // Ambil SEMUA layanan berdasarkan jenis layanan yang dipilih
-        $selectedJenisLayanan = !empty($this->jenisLayananString) ? explode(',', $this->jenisLayananString) : [];
+        // Collect all layanan IDs from checkbox fields
         $allLayananIds = [];
-
-        if (!empty($selectedJenisLayanan)) {
-            $jenisKendaraanId = $record->kendaraan->jenis_kendaraan_id;
-
-            // Jika jenis kendaraan tidak ada, ambil semua layanan tanpa filter
-            if (!$jenisKendaraanId) {
-                foreach ($selectedJenisLayanan as $jenis) {
-                    $layananIds = Layanan::query()
-                        ->where('jenis_layanan', $jenis)
-                        ->pluck('id')
-                        ->toArray();
-                    
-                    $allLayananIds = array_merge($allLayananIds, $layananIds);
-                }
-            } else {
-                // Ambil SEMUA layanan untuk setiap jenis yang dipilih dengan filter jenis kendaraan
-                foreach ($selectedJenisLayanan as $jenis) {
-                    $layananIds = Layanan::query()
-                        ->where('jenis_layanan', $jenis)
-                        ->whereJsonContains('jenis_kendaraan_akses', (int) $jenisKendaraanId)
-                        ->pluck('id')
-                        ->toArray();
-                    
-                    $allLayananIds = array_merge($allLayananIds, $layananIds);
-                }
-            }
-
-            // Hapus duplikat
-            $allLayananIds = array_unique($allLayananIds);
+        
+        if (!empty($data['layanan_ringan'])) {
+            $allLayananIds = array_merge($allLayananIds, $data['layanan_ringan']);
         }
+        if (!empty($data['layanan_sedang'])) {
+            $allLayananIds = array_merge($allLayananIds, $data['layanan_sedang']);
+        }
+        if (!empty($data['layanan_berat'])) {
+            $allLayananIds = array_merge($allLayananIds, $data['layanan_berat']);
+        }
+        
+        // Remove duplicates
+        $allLayananIds = array_unique($allLayananIds);
 
-        // Update layanan - attach SEMUA layanan dari jenis yang dipilih
+        // Sync layanan relationship
         $record->layanan()->sync($allLayananIds);
 
         return $record;
@@ -146,18 +81,5 @@ class EditAntrean extends EditRecord
         return $this->getResource()::getUrl('index');
     }
 
-    protected function beforeSave(): void
-    {
-        // Validasi sebelum save
-        if (empty($this->jenisLayananString)) {
-            Notification::make()
-                ->warning()
-                ->title('Peringatan')
-                ->body('Silakan pilih minimal satu jenis layanan sebelum menyimpan.')
-                ->persistent()
-                ->send();
-            
-            $this->halt();
-        }
-    }
+    // beforeSave validation removed - layanan selection is now optional
 }

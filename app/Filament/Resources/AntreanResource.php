@@ -79,7 +79,7 @@ class AntreanResource extends Resource
     {
         return [
             // Informasi Antrean Saat Ini
-            Section::make('📋 Informasi Antrean')
+            Section::make('?? Informasi Antrean')
                 ->description('Data antrean yang sedang diedit')
                 ->schema([
                     \Filament\Forms\Components\Grid::make()
@@ -105,7 +105,7 @@ class AntreanResource extends Resource
                                 ->schema([
                                     \Filament\Forms\Components\Placeholder::make('info_kendaraan')
                                         ->label('Kendaraan')
-                                        ->content(fn (?Antrean $record): string => $record?->kendaraan?->nomor_plat . ' • ' . ($record?->kendaraan?->merk?->value ?? '-')),
+                                        ->content(fn (?Antrean $record): string => $record?->kendaraan?->nomor_plat . ' � ' . ($record?->kendaraan?->merk?->value ?? '-')),
                                 ])
                                 ->columnSpan(1),
 
@@ -132,22 +132,213 @@ class AntreanResource extends Resource
                 ->compact()
                 ->columnSpanFull(),
 
-            // SECTION LAYANAN SERVIS DENGAN TOGGLE - IMPROVED
-            Section::make('🔧 Ubah Layanan Servis')
-                ->description('Klik kartu layanan untuk memilih atau membatalkan pilihan')
+            // SECTION LAYANAN SERVIS DENGAN CARD STYLE + CHECKBOX
+            Section::make('?? Ubah Layanan Servis')
+                ->description('Pilih layanan yang diinginkan dengan mencentang checkbox')
                 ->schema([
-                    Hidden::make('jenis_layanan')
-                        ->default(fn ($livewire) => $livewire->jenisLayananString)
-                        ->dehydrated(),
+                    // Grid untuk kartu layanan
+                    \Filament\Forms\Components\Grid::make()
+                        ->schema([
+                            // KARTU SERVIS RINGAN
+                            \Filament\Forms\Components\Card::make()
+                                ->schema([
+                                    // Header dengan icon dan judul
+                                    Placeholder::make('header_ringan')
+                                        ->label('')
+                                        ->content(new HtmlString('
+                                            <div class="flex items-center space-x-4 mb-4">
+                                                <div class="flex-shrink-0">
+                                                    <div class="w-14 h-14 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shadow-sm">
+                                                        <i class="fas fa-oil-can text-blue-600 dark:text-blue-400 text-xl"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <div class="text-lg font-bold text-gray-900 dark:text-white">Servis Ringan</div>
+                                                    <div class="text-sm text-gray-500 dark:text-gray-400">Perawatan dasar dan tune-up ringan</div>
+                                                </div>
+                                            </div>
+                                        '))
+                                        ->columnSpanFull(),
+                                    
+                                    // Checkbox list layanan ringan
+                                    CheckboxList::make('layanan_ringan')
+                                        ->label('')
+                                        ->options(function ($livewire) {
+                                            $jenisKendaraanId = $livewire->getRecord()->kendaraan->jenis_kendaraan_id ?? null;
+                                            if (!$jenisKendaraanId) return [];
+                                            
+                                            return Layanan::query()
+                                                ->where('jenis_layanan', 'ringan')
+                                                ->whereJsonContains('jenis_kendaraan_akses', (int) $jenisKendaraanId)
+                                                ->pluck('nama_layanan', 'id')
+                                                ->toArray();
+                                        })
+                                        ->default(function ($livewire) {
+                                            return $livewire->getRecord()->layanan()
+                                                ->where('jenis_layanan', 'ringan')
+                                                ->pluck('layanan.id')
+                                                ->toArray();
+                                        })
+                                        ->columns(1)
+                                        ->gridDirection('row')
+                                        ->bulkToggleable()
+                                        ->live()
+                                        ->columnSpanFull(),
+                                ])
+                                ->extraAttributes([
+                                    'class' => 'border-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50/80 to-white dark:from-blue-900/20 dark:to-gray-900 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]'
+                                ])
+                                ->visible(fn ($livewire) => 
+                                    Layanan::query()
+                                        ->where('jenis_layanan', 'ringan')
+                                        ->whereJsonContains('jenis_kendaraan_akses', (int) ($livewire->getRecord()->kendaraan->jenis_kendaraan_id ?? 0))
+                                        ->exists()
+                                )
+                                ->columnSpan(1),
 
-                    // Header dengan informasi pilihan
-                    Placeholder::make('selected_info')
-                        ->content(function ($livewire) {
-                            $values = $livewire->jenisLayananString ? explode(',', $livewire->jenisLayananString) : [];
-                            $selectedCount = count($values);
-                            
-                            if ($selectedCount === 0) {
-                                return new HtmlString('
+                            // KARTU SERVIS SEDANG
+                            \Filament\Forms\Components\Card::make()
+                                ->schema([
+                                    // Header dengan icon dan judul
+                                    Placeholder::make('header_sedang')
+                                        ->label('')
+                                        ->content(new HtmlString('
+                                            <div class="flex items-center space-x-4 mb-4">
+                                                <div class="flex-shrink-0">
+                                                    <div class="w-14 h-14 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center shadow-sm">
+                                                        <i class="fas fa-tools text-green-600 dark:text-green-400 text-xl"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <div class="text-lg font-bold text-gray-900 dark:text-white">Servis Sedang</div>
+                                                    <div class="text-sm text-gray-500 dark:text-gray-400">Perbaikan komponen utama kendaraan</div>
+                                                </div>
+                                            </div>
+                                        '))
+                                        ->columnSpanFull(),
+                                    
+                                    // Checkbox list layanan sedang
+                                    CheckboxList::make('layanan_sedang')
+                                        ->label('')
+                                        ->options(function ($livewire) {
+                                            $jenisKendaraanId = $livewire->getRecord()->kendaraan->jenis_kendaraan_id ?? null;
+                                            if (!$jenisKendaraanId) return [];
+                                            
+                                            return Layanan::query()
+                                                ->where('jenis_layanan', 'sedang')
+                                                ->whereJsonContains('jenis_kendaraan_akses', (int) $jenisKendaraanId)
+                                                ->pluck('nama_layanan', 'id')
+                                                ->toArray();
+                                        })
+                                        ->default(function ($livewire) {
+                                            return $livewire->getRecord()->layanan()
+                                                ->where('jenis_layanan', 'sedang')
+                                                ->pluck('layanan.id')
+                                                ->toArray();
+                                        })
+                                        ->columns(1)
+                                        ->gridDirection('row')
+                                        ->bulkToggleable()
+                                        ->live()
+                                        ->columnSpanFull(),
+                                ])
+                                ->extraAttributes([
+                                    'class' => 'border-2 border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50/80 to-white dark:from-green-900/20 dark:to-gray-900 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]'
+                                ])
+                                ->visible(fn ($livewire) => 
+                                    Layanan::query()
+                                        ->where('jenis_layanan', 'sedang')
+                                        ->whereJsonContains('jenis_kendaraan_akses', (int) ($livewire->getRecord()->kendaraan->jenis_kendaraan_id ?? 0))
+                                        ->exists()
+                                )
+                                ->columnSpan(1),
+
+                            // KARTU SERVIS BERAT
+                            \Filament\Forms\Components\Card::make()
+                                ->schema([
+                                    // Header dengan icon dan judul
+                                    Placeholder::make('header_berat')
+                                        ->label('')
+                                        ->content(new HtmlString('
+                                            <div class="flex items-center space-x-4 mb-4">
+                                                <div class="flex-shrink-0">
+                                                    <div class="w-14 h-14 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center shadow-sm">
+                                                        <i class="fas fa-cogs text-red-600 dark:text-red-400 text-xl"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <div class="text-lg font-bold text-gray-900 dark:text-white">Servis Berat</div>
+                                                    <div class="text-sm text-gray-500 dark:text-gray-400">Overhaul dan perbaikan besar</div>
+                                                </div>
+                                            </div>
+                                        '))
+                                        ->columnSpanFull(),
+                                    
+                                    // Checkbox list layanan berat
+                                    CheckboxList::make('layanan_berat')
+                                        ->label('')
+                                        ->options(function ($livewire) {
+                                            $jenisKendaraanId = $livewire->getRecord()->kendaraan->jenis_kendaraan_id ?? null;
+                                            if (!$jenisKendaraanId) return [];
+                                            
+                                            return Layanan::query()
+                                                ->where('jenis_layanan', 'berat')
+                                                ->whereJsonContains('jenis_kendaraan_akses', (int) $jenisKendaraanId)
+                                                ->pluck('nama_layanan', 'id')
+                                                ->toArray();
+                                        })
+                                        ->default(function ($livewire) {
+                                            return $livewire->getRecord()->layanan()
+                                                ->where('jenis_layanan', 'berat')
+                                                ->pluck('layanan.id')
+                                                ->toArray();
+                                        })
+                                        ->columns(1)
+                                        ->gridDirection('row')
+                                        ->bulkToggleable()
+                                        ->live()
+                                        ->columnSpanFull(),
+                                ])
+                                ->extraAttributes([
+                                    'class' => 'border-2 border-red-200 dark:border-red-800 bg-gradient-to-br from-red-50/80 to-white dark:from-red-900/20 dark:to-gray-900 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]'
+                                ])
+                                ->visible(fn ($livewire) => 
+                                    Layanan::query()
+                                        ->where('jenis_layanan', 'berat')
+                                        ->whereJsonContains('jenis_kendaraan_akses', (int) ($livewire->getRecord()->kendaraan->jenis_kendaraan_id ?? 0))
+                                        ->exists()
+                                )
+                                ->columnSpan(1),
+                        ])
+                        ->columns(3)
+                        ->columnSpanFull(),
+
+                    // Placeholder jika tidak ada layanan
+                    Placeholder::make('no_layanan')
+                        ->content(new HtmlString('
+                            <div class="text-center py-12">
+                                <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-exclamation-triangle text-gray-400 text-xl"></i>
+                                </div>
+                                <div class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Tidak Ada Layanan Tersedia</div>
+                                <div class="text-gray-500 dark:text-gray-400">Tidak ada layanan yang tersedia untuk jenis kendaraan ini</div>
+                            </div>
+                        '))
+                        ->visible(fn ($livewire) => 
+                            !Layanan::query()
+                                ->whereJsonContains('jenis_kendaraan_akses', (int) ($livewire->getRecord()->kendaraan->jenis_kendaraan_id ?? 0))
+                                ->exists()
+                        )
+                        ->columnSpanFull(),
+                ])
+                ->compact()
+                ->columnSpanFull(),
+
+
+        ];
+    }
+
+    /**
                                     <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
                                         <div class="flex items-center space-x-3">
                                             <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 text-lg"></i>
@@ -178,7 +369,7 @@ class AntreanResource extends Resource
                                                 <div class="text-sm text-green-700 dark:text-green-300 mt-1">' . implode(', ', $selectedNames) . '</div>
                                             </div>
                                         </div>
-                                        <span class="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-medium">✓ Aktif</span>
+                                        <span class="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-medium">? Aktif</span>
                                     </div>
                                 </div>
                             ');
@@ -526,68 +717,18 @@ class AntreanResource extends Resource
 
                             TextInput::make('nomor_plat')
                                 ->label('Plat Nomor')
+                                ->required()
                                 ->maxLength(15)
-                                ->placeholder('__ ____ ___')
-                                ->helperText('Format: B 1234 ABC atau AB 123 CD - otomatis diformat saat mengetik')
-                                ->extraInputAttributes([
-                                    'style' => 'text-transform: uppercase; letter-spacing: 2px; font-family: monospace;',
-                                    'x-on:input' => '
-                                        let val = $el.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-                                        let formatted = "";
-                                        let letters1 = val.match(/^[A-Z]{1,2}/);
-                                        if (letters1) {
-                                            formatted = letters1[0];
-                                            val = val.slice(letters1[0].length);
-                                            let numbers = val.match(/^[0-9]{1,4}/);
-                                            if (numbers) {
-                                                formatted += " " + numbers[0];
-                                                val = val.slice(numbers[0].length);
-                                                let letters2 = val.match(/^[A-Z]{1,3}/);
-                                                if (letters2) {
-                                                    formatted += " " + letters2[0];
-                                                }
-                                            }
-                                        }
-                                        $el.value = formatted;
-                                    ',
-                                ])
+                                ->placeholder('Contoh: B 1234 ABC')
                                 ->live(debounce: 500)
-                                ->dehydrateStateUsing(function ($state) {
-                                    // Format plat nomor saat disimpan (uppercase dan spasi yang benar)
-                                    if (empty($state)) return $state;
-                                    
-                                    // Hapus semua spasi dan uppercase
-                                    $cleaned = strtoupper(preg_replace('/\s+/', '', $state));
-                                    
-                                    // Format: X/XX + 1-4 digit + 1-3 huruf (opsional)
-                                    // Contoh: B1234ABC -> B 1234 ABC, AB123CD -> AB 123 CD
-                                    if (preg_match('/^([A-Z]{1,2})(\d{1,4})([A-Z]{0,3})$/', $cleaned, $matches)) {
-                                        $prefix = $matches[1];
-                                        $numbers = $matches[2];
-                                        $suffix = $matches[3];
-                                        
-                                        return trim($prefix . ' ' . $numbers . ($suffix ? ' ' . $suffix : ''));
-                                    }
-                                    
-                                    return $state;
-                                })
                                 ->afterStateUpdated(function ($state, Set $set) {
                                     if (empty($state)) {
                                         $set('kendaraan_id', null);
                                         return;
                                     }
                                     
-                                    // Normalisasi plat untuk pencarian (hapus spasi, uppercase)
-                                    $normalizedPlat = strtoupper(preg_replace('/\s+/', '', $state));
-                                    
-                                    // Format ulang untuk tampilan
-                                    if (preg_match('/^([A-Z]{1,2})(\d{1,4})([A-Z]{0,3})$/', $normalizedPlat, $matches)) {
-                                        $formattedPlat = trim($matches[1] . ' ' . $matches[2] . ($matches[3] ? ' ' . $matches[3] : ''));
-                                        $set('nomor_plat', $formattedPlat);
-                                    }
-                                    
-                                    // Smart detection kendaraan - cari dengan normalisasi
-                                    $kendaraan = Kendaraan::whereRaw('REPLACE(UPPER(nomor_plat), " ", "") = ?', [$normalizedPlat])->first();
+                                    // Smart detection kendaraan
+                                    $kendaraan = Kendaraan::where('nomor_plat', $state)->first();
                                     
                                     if ($kendaraan) {
                                         // Auto-fill kendaraan
@@ -609,7 +750,7 @@ class AntreanResource extends Resource
                                 })
                                 ->suffixIcon(fn ($get) => $get('kendaraan_id') ? 'heroicon-o-check-circle' : 'heroicon-o-magnifying-glass')
                                 ->suffixIconColor(fn ($get) => $get('kendaraan_id') ? 'success' : 'gray')
-                                ->helperText('Format: AB 1234 CD atau B 123 AB - otomatis diformat. Kosongkan jika tidak ada plat.')
+                                ->helperText('Ketik plat nomor - data akan otomatis terisi jika sudah terdaftar')
                                 ->columnSpanFull(),
                             
                             Select::make('merk')
@@ -644,48 +785,41 @@ class AntreanResource extends Resource
                                 ->label('Nama Lengkap')
                                 ->required()
                                 ->placeholder('Masukkan nama lengkap pelanggan')
-                                ->extraInputAttributes([
-                                    'x-on:input' => '$el.value = $el.value.replace(/[0-9]/g, "")',
-                                    'x-on:keydown' => 'if (/[0-9]/.test($event.key)) $event.preventDefault()',
-                                ])
                                 ->live(debounce: 500)
                                 ->afterStateUpdated(function ($state, Set $set, Get $get) {
-                                    // Reset semua field jika nama dihapus
                                     if (empty($state)) {
                                         $set('pengunjung_id', null);
-                                        $set('nomor_tlp', '');
-                                        $set('alamat', '');
                                         return;
                                     }
                                     
-                                    // Smart detection pelanggan - exact match (nama lengkap)
-                                    // Cari pelanggan dengan nama yang SAMA PERSIS (case-insensitive)
-                                    $pengunjung = Pengunjung::whereRaw('LOWER(nama_pengunjung) = ?', [strtolower($state)])->first();
-                                    
-                                    if ($pengunjung) {
-                                        // Auto-fill pelanggan
-                                        $set('pengunjung_id', $pengunjung->id);
-                                        $set('nomor_tlp', $pengunjung->nomor_tlp);
-                                        $set('alamat', $pengunjung->alamat ?? '');
-                                    } else {
-                                        // Nama tidak match - reset auto-fill
-                                        $set('pengunjung_id', null);
-                                        $set('nomor_tlp', '');
-                                        $set('alamat', '');
+                                    // Smart detection pelanggan (hanya jika kendaraan belum auto-fill)
+                                    if (empty($get('kendaraan_id'))) {
+                                        $pengunjung = Pengunjung::where('nama_pengunjung', 'like', "{$state}%")->first();
+                                        
+                                        if ($pengunjung) {
+                                            // Auto-fill pelanggan
+                                            $set('pengunjung_id', $pengunjung->id);
+                                            $set('nomor_tlp', $pengunjung->nomor_tlp);
+                                            $set('alamat', $pengunjung->alamat ?? '');
+                                        } else {
+                                            $set('pengunjung_id', null);
+                                            // Jangan reset nomor tlp/alamat jika user sedang mengetik data baru
+                                            // Tapi jika sebelumnya ada ID, mungkin perlu reset? 
+                                            // Biarkan user mengisi manual jika nama baru.
+                                        }
                                     }
                                 })
                                 ->suffixIcon(fn ($get) => $get('pengunjung_id') ? 'heroicon-o-check-circle' : 'heroicon-o-magnifying-glass')
                                 ->suffixIconColor(fn ($get) => $get('pengunjung_id') ? 'success' : 'gray')
-                                ->helperText('Ketik nama lengkap - data akan otomatis terisi jika sudah terdaftar')
+                                ->helperText('Ketik nama - data akan otomatis terisi jika sudah terdaftar')
                                 ->columnSpanFull(),
 
                             TextInput::make('nomor_tlp')
                                 ->label('Nomor Telepon')
                                 ->tel()
-                                ->extraInputAttributes([
-                                    'x-on:input' => '$el.value = $el.value.replace(/[^0-9]/g, "")',
-                                    'x-on:keydown' => 'if (!/[0-9]/.test($event.key) && !["Backspace","Delete","Tab","ArrowLeft","ArrowRight"].includes($event.key)) $event.preventDefault()',
-                                ])
+                                ->numeric()
+                                ->numeric()
+                                // ->required() // Dibuat opsional
                                 ->placeholder('Contoh: 081234567890')
                                 ->columnSpanFull(),
 
@@ -703,387 +837,189 @@ class AntreanResource extends Resource
                 ->columnSpanFull(),
 
 
-            // SECTION 3: PILIH LAYANAN SERVIS
-            Section::make('Layanan')
+            // SECTION 3: PILIH LAYANAN SERVIS (CARD STYLE + CHECKBOX)
+            Section::make('Pilih Layanan Servis')
+                ->description('Pilih layanan yang diinginkan dengan mencentang checkbox')
                 ->visible(fn ($get) => !empty($get('jenis_kendaraan_id')))
                 ->schema([
-
-                    // Hidden field untuk jenis_layanan
-                    Hidden::make('jenis_layanan')
-                        ->default(fn ($livewire) => $livewire->jenisLayananString ?? '')
-                        ->dehydrated(),
-
-                    // Kartu jenis layanan dengan visibility yang benar
+                    // Grid untuk kartu layanan
                     \Filament\Forms\Components\Grid::make()
                         ->schema([
-                            // Kartu Servis Ringan
+                            // KARTU SERVIS RINGAN
                             \Filament\Forms\Components\Card::make()
                                 ->schema([
-                                    \Filament\Forms\Components\Actions::make([
-                                        \Filament\Forms\Components\Actions\Action::make('toggle_ringan')
-                                            ->label(function ($livewire, $get) {
-                                                $values = $livewire->jenisLayananString ? explode(',', $livewire->jenisLayananString) : [];
-                                                $isSelected = in_array('ringan', $values);
-                                                $jenisKendaraanId = $get('jenis_kendaraan_id');
-                                                $layanans = $livewire->getLayananForJenis($jenisKendaraanId, 'ringan');
-                                                
-                                                return new HtmlString('
-                                                    <div class="flex items-start justify-between w-full p-1">
-                                                        <div class="flex items-start space-x-4 flex-1">
-                                                            <div class="flex-shrink-0">
-                                                                <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center ' . ($isSelected ? 'ring-2 ring-blue-500 shadow-lg' : '') . ' transition-all duration-300">
-                                                                    <i class="fas fa-oil-can text-blue-600 dark:text-blue-400 text-lg"></i>
-                                                                </div>
-                                                            </div>
-                                                            <div class="flex-1 min-w-0">
-                                                                <div class="text-lg font-semibold text-gray-900 dark:text-white">Servis Ringan</div>
-                                                                <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Perawatan dasar dan tune-up ringan</div>
-                                                                
-                                                                ' . ($isSelected ? '
-                                                                <div class="mt-3 flex items-center space-x-4 text-sm">
-                                                                    <div class="flex items-center space-x-2 text-blue-600 dark:text-blue-400">
-                                                                        <i class="fas fa-bolt text-xs"></i>
-                                                                        
-                                                                    </div>
-                                                                    <div class="flex items-center space-x-2 text-green-600 dark:text-green-400">
-                                                                        <i class="fas fa-check-circle text-xs"></i>
-                                                                        <span>' . $layanans->count() . ' aktivitas layanan</span>
-                                                                    </div>
-                                                                </div>
-                                                                ' : '
-                                                                <div class="mt-2 text-xs text-gray-400 dark:text-gray-500">
-                                                                    ' . $layanans->count() . ' aktivitas layanan
-                                                                </div>
-                                                                ') . '
-                                                            </div>
-                                                        </div>
-                                                        <div class="flex-shrink-0">
-                                                            ' . ($isSelected ? '
-                                                            <div class="flex items-center space-x-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-2 rounded-full shadow-sm">
-                                                                <i class="fas fa-check text-sm"></i>
-                                                                <span class="text-sm font-medium">Terpilih</span>
-                                                            </div>
-                                                            ' : '
-                                                            <div class="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-3 py-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                                                                <span class="text-sm font-medium">Pilih</span>
-                                                            </div>
-                                                            ') . '
-                                                        </div>
-                                                    </div>
-                                                ');
-                                            })
-                                            ->action(function ($livewire) {
-                                                $livewire->toggleJenisLayanan('ringan');
-                                            })
-                                            ->color('gray')
-                                            ->extraAttributes(['class' => 'w-full !p-3 !justify-start hover:bg-transparent transition-all duration-200']),
-                                    ])->columnSpanFull(),
-                                    
-                                    \Filament\Forms\Components\Placeholder::make('ringan_info')
+                                    // Header dengan icon dan judul
+                                    Placeholder::make('header_ringan')
                                         ->label('')
-                                        ->content(function ($get, $livewire) {
-                                            $jenisKendaraanId = $get('jenis_kendaraan_id');
-                                            if (!$jenisKendaraanId) return '';
-                                            
-                                            $layanans = $livewire->getLayananForJenis($jenisKendaraanId, 'ringan');
-                                            
-                                            if ($layanans->isEmpty()) return '';
-                                            
-                                            $values = $livewire->jenisLayananString ? explode(',', $livewire->jenisLayananString) : [];
-                                            $isSelected = in_array('ringan', $values);
-                                            
-                                            $html = '<div class="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-                                                <div class="text-xs font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center space-x-2">
-                                                    <i class="fas fa-list-check text-blue-500"></i>
-                                                    <span>Layanan yang Tersedia:</span>
+                                        ->content(new HtmlString('
+                                            <div class="flex items-center space-x-4 mb-4">
+                                                <div class="flex-shrink-0">
+                                                    <div class="w-14 h-14 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shadow-sm">
+                                                        <i class="fas fa-oil-can text-blue-600 dark:text-blue-400 text-xl"></i>
+                                                    </div>
                                                 </div>
-                                                <div class="grid grid-cols-1 gap-2">';
-                                            
-                                            foreach ($layanans as $layanan) {
-                                                $html .= '
-                                                <div class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 hover:shadow-sm transition-shadow">
-                                                    <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                                    </svg>
-                                                    <span class="text-xs text-gray-900 dark:text-gray-100">' . htmlspecialchars($layanan->nama_layanan) . '</span>
-                                                </div>';
-                                            }
-                                            
-                                            return new HtmlString($html . '</div></div>');
-                                        })
-                                        ->visible(fn($get) => !empty($get('jenis_kendaraan_id')))
-                                ])
-                                ->extraAttributes(function ($livewire, $get) {
-                                    $values = $livewire->jenisLayananString ? explode(',', $livewire->jenisLayananString) : [];
-                                    $isSelected = in_array('ringan', $values);
+                                                <div class="flex-1">
+                                                    <div class="text-lg font-bold text-gray-900 dark:text-white">Servis Ringan</div>
+                                                    <div class="text-sm text-gray-500 dark:text-gray-400">Perawatan dasar dan tune-up ringan</div>
+                                                </div>
+                                            </div>
+                                        '))
+                                        ->columnSpanFull(),
                                     
-                                    $baseClass = 'transition-all duration-300 hover:scale-[1.02] cursor-pointer ';
-                                    $dynamicClass = $isSelected
-                                        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 shadow-lg ring-2 ring-blue-200 dark:ring-blue-800'
-                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md';
-                                    return ['class' => $baseClass . $dynamicClass];
-                                })
-                                ->visible(fn($get, $livewire) => 
-                                    !empty($get('jenis_kendaraan_id')) && 
-                                    $livewire->hasLayananForJenis($get('jenis_kendaraan_id'), 'ringan')
+                                    // Checkbox list layanan ringan
+                                    CheckboxList::make('layanan_ringan')
+                                        ->label('')
+                                        ->options(function ($get) {
+                                            $jenisKendaraanId = $get('jenis_kendaraan_id');
+                                            if (!$jenisKendaraanId) return [];
+                                            
+                                            return Layanan::query()
+                                                ->where('jenis_layanan', 'ringan')
+                                                ->whereJsonContains('jenis_kendaraan_akses', (int) $jenisKendaraanId)
+                                                ->pluck('nama_layanan', 'id')
+                                                ->toArray();
+                                        })
+                                        ->columns(1)
+                                        ->gridDirection('row')
+                                        ->bulkToggleable()
+                                        ->live()
+                                        ->columnSpanFull(),
+                                ])
+                                ->extraAttributes([
+                                    'class' => 'border-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50/80 to-white dark:from-blue-900/20 dark:to-gray-900 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]'
+                                ])
+                                ->visible(fn ($get) => 
+                                    Layanan::query()
+                                        ->where('jenis_layanan', 'ringan')
+                                        ->whereJsonContains('jenis_kendaraan_akses', (int) $get('jenis_kendaraan_id'))
+                                        ->exists()
                                 )
                                 ->columnSpan(1),
 
-                            // Kartu Servis Sedang
+                            // KARTU SERVIS SEDANG
                             \Filament\Forms\Components\Card::make()
                                 ->schema([
-                                    \Filament\Forms\Components\Actions::make([
-                                        \Filament\Forms\Components\Actions\Action::make('toggle_sedang')
-                                            ->label(function ($livewire, $get) {
-                                                $values = $livewire->jenisLayananString ? explode(',', $livewire->jenisLayananString) : [];
-                                                $isSelected = in_array('sedang', $values);
-                                                $jenisKendaraanId = $get('jenis_kendaraan_id');
-                                                $layanans = $livewire->getLayananForJenis($jenisKendaraanId, 'sedang');
-                                                
-                                                return new HtmlString('
-                                                    <div class="flex items-start justify-between w-full p-1">
-                                                        <div class="flex items-start space-x-4 flex-1">
-                                                            <div class="flex-shrink-0">
-                                                                <div class="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center ' . ($isSelected ? 'ring-2 ring-green-500 shadow-lg' : '') . ' transition-all duration-300">
-                                                                    <i class="fas fa-tools text-green-600 dark:text-green-400 text-lg"></i>
-                                                                </div>
-                                                            </div>
-                                                            <div class="flex-1 min-w-0">
-                                                                <div class="text-lg font-semibold text-gray-900 dark:text-white">Servis Sedang</div>
-                                                                <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Perbaikan komponen utama kendaraan</div>
-                                                                
-                                                                ' . ($isSelected ? '
-                                                                <div class="mt-3 flex items-center space-x-4 text-sm">
-                                                                    <div class="flex items-center space-x-2 text-green-600 dark:text-green-400">
-                                                                        <i class="fas fa-clock text-xs"></i>
-                                                                        
-                                                                    </div>
-                                                                    <div class="flex items-center space-x-2 text-green-600 dark:text-green-400">
-                                                                        <i class="fas fa-check-circle text-xs"></i>
-                                                                        <span>' . $layanans->count() . ' aktivitas layanan</span>
-                                                                    </div>
-                                                                </div>
-                                                                ' : '
-                                                                <div class="mt-2 text-xs text-gray-400 dark:text-gray-500">
-                                                                    ' . $layanans->count() . ' aktivitas layanan
-                                                                </div>
-                                                                ') . '
-                                                            </div>
-                                                        </div>
-                                                        <div class="flex-shrink-0">
-                                                            ' . ($isSelected ? '
-                                                            <div class="flex items-center space-x-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-2 rounded-full shadow-sm">
-                                                                <i class="fas fa-check text-sm"></i>
-                                                                <span class="text-sm font-medium">Terpilih</span>
-                                                            </div>
-                                                            ' : '
-                                                            <div class="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-3 py-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                                                                <span class="text-sm font-medium">Pilih</span>
-                                                            </div>
-                                                            ') . '
-                                                        </div>
-                                                    </div>
-                                                ');
-                                            })
-                                            ->action(function ($livewire) {
-                                                $livewire->toggleJenisLayanan('sedang');
-                                            })
-                                            ->color('gray')
-                                            ->extraAttributes(['class' => 'w-full !p-3 !justify-start hover:bg-transparent transition-all duration-200']),
-                                    ])->columnSpanFull(),
-                                    
-                                    \Filament\Forms\Components\Placeholder::make('sedang_info')
+                                    // Header dengan icon dan judul
+                                    Placeholder::make('header_sedang')
                                         ->label('')
-                                        ->content(function ($get, $livewire) {
-                                            $jenisKendaraanId = $get('jenis_kendaraan_id');
-                                            if (!$jenisKendaraanId) return '';
-                                            
-                                            $layanans = $livewire->getLayananForJenis($jenisKendaraanId, 'sedang');
-                                            
-                                            if ($layanans->isEmpty()) return '';
-                                            
-                                            $values = $livewire->jenisLayananString ? explode(',', $livewire->jenisLayananString) : [];
-                                            $isSelected = in_array('sedang', $values);
-                                            
-                                            $html = '<div class="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-                                                <div class="text-xs font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center space-x-2">
-                                                    <i class="fas fa-list-check text-green-500"></i>
-                                                    <span>Layanan yang Tersedia:</span>
+                                        ->content(new HtmlString('
+                                            <div class="flex items-center space-x-4 mb-4">
+                                                <div class="flex-shrink-0">
+                                                    <div class="w-14 h-14 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center shadow-sm">
+                                                        <i class="fas fa-tools text-green-600 dark:text-green-400 text-xl"></i>
+                                                    </div>
                                                 </div>
-                                                <div class="grid grid-cols-1 gap-2">';
-                                            
-                                            foreach ($layanans as $layanan) {
-                                                $html .= '
-                                                <div class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 hover:shadow-sm transition-shadow">
-                                                    <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                                    </svg>
-                                                    <span class="text-xs text-gray-900 dark:text-gray-100">' . htmlspecialchars($layanan->nama_layanan) . '</span>
-                                                </div>';
-                                            }
-                                            
-                                            return new HtmlString($html . '</div></div>');
-                                        })
-                                        ->visible(fn($get) => !empty($get('jenis_kendaraan_id')))
-                                ])
-                                ->extraAttributes(function ($livewire, $get) {
-                                    $values = $livewire->jenisLayananString ? explode(',', $livewire->jenisLayananString) : [];
-                                    $isSelected = in_array('sedang', $values);
+                                                <div class="flex-1">
+                                                    <div class="text-lg font-bold text-gray-900 dark:text-white">Servis Sedang</div>
+                                                    <div class="text-sm text-gray-500 dark:text-gray-400">Perbaikan komponen utama kendaraan</div>
+                                                </div>
+                                            </div>
+                                        '))
+                                        ->columnSpanFull(),
                                     
-                                    $baseClass = 'transition-all duration-300 hover:scale-[1.02] cursor-pointer ';
-                                    $dynamicClass = $isSelected
-                                        ? 'border-green-500 bg-green-50/50 dark:bg-green-900/20 shadow-lg ring-2 ring-green-200 dark:ring-green-800'
-                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-green-300 dark:hover:border-green-600 hover:shadow-md';
-                                    return ['class' => $baseClass . $dynamicClass];
-                                })
-                                ->visible(fn($get, $livewire) => 
-                                    !empty($get('jenis_kendaraan_id')) && 
-                                    $livewire->hasLayananForJenis($get('jenis_kendaraan_id'), 'sedang')
+                                    // Checkbox list layanan sedang
+                                    CheckboxList::make('layanan_sedang')
+                                        ->label('')
+                                        ->options(function ($get) {
+                                            $jenisKendaraanId = $get('jenis_kendaraan_id');
+                                            if (!$jenisKendaraanId) return [];
+                                            
+                                            return Layanan::query()
+                                                ->where('jenis_layanan', 'sedang')
+                                                ->whereJsonContains('jenis_kendaraan_akses', (int) $jenisKendaraanId)
+                                                ->pluck('nama_layanan', 'id')
+                                                ->toArray();
+                                        })
+                                        ->columns(1)
+                                        ->gridDirection('row')
+                                        ->bulkToggleable()
+                                        ->live()
+                                        ->columnSpanFull(),
+                                ])
+                                ->extraAttributes([
+                                    'class' => 'border-2 border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50/80 to-white dark:from-green-900/20 dark:to-gray-900 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]'
+                                ])
+                                ->visible(fn ($get) => 
+                                    Layanan::query()
+                                        ->where('jenis_layanan', 'sedang')
+                                        ->whereJsonContains('jenis_kendaraan_akses', (int) $get('jenis_kendaraan_id'))
+                                        ->exists()
                                 )
                                 ->columnSpan(1),
 
-                            // Kartu Servis Berat
+                            // KARTU SERVIS BERAT
                             \Filament\Forms\Components\Card::make()
                                 ->schema([
-                                    \Filament\Forms\Components\Actions::make([
-                                        \Filament\Forms\Components\Actions\Action::make('toggle_berat')
-                                            ->label(function ($livewire, $get) {
-                                                $values = $livewire->jenisLayananString ? explode(',', $livewire->jenisLayananString) : [];
-                                                $isSelected = in_array('berat', $values);
-                                                $jenisKendaraanId = $get('jenis_kendaraan_id');
-                                                $layanans = $livewire->getLayananForJenis($jenisKendaraanId, 'berat');
-                                                
-                                                return new HtmlString('
-                                                    <div class="flex items-start justify-between w-full p-1">
-                                                        <div class="flex items-start space-x-4 flex-1">
-                                                            <div class="flex-shrink-0">
-                                                                <div class="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center ' . ($isSelected ? 'ring-2 ring-red-500 shadow-lg' : '') . ' transition-all duration-300">
-                                                                    <i class="fas fa-cogs text-red-600 dark:text-red-400 text-lg"></i>
-                                                                </div>
-                                                            </div>
-                                                            <div class="flex-1 min-w-0">
-                                                                <div class="text-lg font-semibold text-gray-900 dark:text-white">Servis Berat</div>
-                                                                <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Overhaul dan perbaikan besar</div>
-                                                                
-                                                                ' . ($isSelected ? '
-                                                                <div class="mt-3 flex items-center space-x-4 text-sm">
-                                                                    <div class="flex items-center space-x-2 text-red-600 dark:text-red-400">
-                                                                        <i class="fas fa-calendar-day text-xs"></i>
-                                                                        
-                                                                    </div>
-                                                                    <div class="flex items-center space-x-2 text-green-600 dark:text-green-400">
-                                                                        <i class="fas fa-check-circle text-xs"></i>
-                                                                        <span>' . $layanans->count() . ' aktivitas layanan</span>
-                                                                    </div>
-                                                                </div>
-                                                                ' : '
-                                                                <div class="mt-2 text-xs text-gray-400 dark:text-gray-500">
-                                                                    ' . $layanans->count() . ' aktivitas layanan
-                                                                </div>
-                                                                ') . '
-                                                            </div>
-                                                        </div>
-                                                        <div class="flex-shrink-0">
-                                                            ' . ($isSelected ? '
-                                                            <div class="flex items-center space-x-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-3 py-2 rounded-full shadow-sm">
-                                                                <i class="fas fa-check text-sm"></i>
-                                                                <span class="text-sm font-medium">Terpilih</span>
-                                                            </div>
-                                                            ' : '
-                                                            <div class="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-3 py-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                                                                <span class="text-sm font-medium">Pilih</span>
-                                                            </div>
-                                                            ') . '
-                                                        </div>
-                                                    </div>
-                                                ');
-                                            })
-                                            ->action(function ($livewire) {
-                                                $livewire->toggleJenisLayanan('berat');
-                                            })
-                                            ->color('gray')
-                                            ->extraAttributes(['class' => 'w-full !p-3 !justify-start hover:bg-transparent transition-all duration-200']),
-                                    ])->columnSpanFull(),
-                                    
-                                    \Filament\Forms\Components\Placeholder::make('berat_info')
+                                    // Header dengan icon dan judul
+                                    Placeholder::make('header_berat')
                                         ->label('')
-                                        ->content(function ($get, $livewire) {
-                                            $jenisKendaraanId = $get('jenis_kendaraan_id');
-                                            if (!$jenisKendaraanId) return '';
-                                            
-                                            $layanans = $livewire->getLayananForJenis($jenisKendaraanId, 'berat');
-                                            
-                                            if ($layanans->isEmpty()) return '';
-                                            
-                                            $values = $livewire->jenisLayananString ? explode(',', $livewire->jenisLayananString) : [];
-                                            $isSelected = in_array('berat', $values);
-                                            
-                                            $html = '<div class="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-                                                <div class="text-xs font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center space-x-2">
-                                                    <i class="fas fa-list-check text-red-500"></i>
-                                                    <span>Layanan yang Tersedia:</span>
+                                        ->content(new HtmlString('
+                                            <div class="flex items-center space-x-4 mb-4">
+                                                <div class="flex-shrink-0">
+                                                    <div class="w-14 h-14 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center shadow-sm">
+                                                        <i class="fas fa-cogs text-red-600 dark:text-red-400 text-xl"></i>
+                                                    </div>
                                                 </div>
-                                                <div class="grid grid-cols-1 gap-2">';
-                                            
-                                            foreach ($layanans as $layanan) {
-                                                $html .= '
-                                                <div class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 hover:shadow-sm transition-shadow">
-                                                    <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                                    </svg>
-                                                    <span class="text-xs text-gray-900 dark:text-gray-100">' . htmlspecialchars($layanan->nama_layanan) . '</span>
-                                                </div>';
-                                            }
-                                            
-                                            return new HtmlString($html . '</div></div>');
-                                        })
-                                        ->visible(fn($get) => !empty($get('jenis_kendaraan_id')))
-                                ])
-                                ->extraAttributes(function ($livewire, $get) {
-                                    $values = $livewire->jenisLayananString ? explode(',', $livewire->jenisLayananString) : [];
-                                    $isSelected = in_array('berat', $values);
+                                                <div class="flex-1">
+                                                    <div class="text-lg font-bold text-gray-900 dark:text-white">Servis Berat</div>
+                                                    <div class="text-sm text-gray-500 dark:text-gray-400">Overhaul dan perbaikan besar</div>
+                                                </div>
+                                            </div>
+                                        '))
+                                        ->columnSpanFull(),
                                     
-                                    $baseClass = 'transition-all duration-300 hover:scale-[1.02] cursor-pointer ';
-                                    $dynamicClass = $isSelected
-                                        ? 'border-red-500 bg-red-50/50 dark:bg-red-900/20 shadow-lg ring-2 ring-red-200 dark:ring-red-800'
-                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-red-300 dark:hover:border-red-600 hover:shadow-md';
-                                    return ['class' => $baseClass . $dynamicClass];
-                                })
-                                ->visible(fn($get, $livewire) => 
-                                    !empty($get('jenis_kendaraan_id')) && 
-                                    $livewire->hasLayananForJenis($get('jenis_kendaraan_id'), 'berat')
+                                    // Checkbox list layanan berat
+                                    CheckboxList::make('layanan_berat')
+                                        ->label('')
+                                        ->options(function ($get) {
+                                            $jenisKendaraanId = $get('jenis_kendaraan_id');
+                                            if (!$jenisKendaraanId) return [];
+                                            
+                                            return Layanan::query()
+                                                ->where('jenis_layanan', 'berat')
+                                                ->whereJsonContains('jenis_kendaraan_akses', (int) $jenisKendaraanId)
+                                                ->pluck('nama_layanan', 'id')
+                                                ->toArray();
+                                        })
+                                        ->columns(1)
+                                        ->gridDirection('row')
+                                        ->bulkToggleable()
+                                        ->live()
+                                        ->columnSpanFull(),
+                                ])
+                                ->extraAttributes([
+                                    'class' => 'border-2 border-red-200 dark:border-red-800 bg-gradient-to-br from-red-50/80 to-white dark:from-red-900/20 dark:to-gray-900 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]'
+                                ])
+                                ->visible(fn ($get) => 
+                                    Layanan::query()
+                                        ->where('jenis_layanan', 'berat')
+                                        ->whereJsonContains('jenis_kendaraan_akses', (int) $get('jenis_kendaraan_id'))
+                                        ->exists()
                                 )
                                 ->columnSpan(1),
                         ])
                         ->columns(3)
                         ->columnSpanFull(),
 
-                    // Placeholder jika tidak ada layanan sama sekali
+                    // Placeholder jika tidak ada layanan
                     Placeholder::make('no_layanan')
                         ->content(new HtmlString('
                             <div class="text-center py-12">
-                                <div class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <i class="fas fa-exclamation-triangle text-gray-400 text-2xl"></i>
+                                <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-exclamation-triangle text-gray-400 text-xl"></i>
                                 </div>
-                                <div class="text-xl font-bold text-gray-900 dark:text-white mb-2">Tidak Ada Layanan Tersedia</div>
-                                <div class="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                                    Tidak ada layanan yang tersedia untuk jenis kendaraan ini. 
-                                    Silakan hubungi administrator untuk menambahkan layanan yang sesuai.
-                                </div>
+                                <div class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Tidak Ada Layanan Tersedia</div>
+                                <div class="text-gray-500 dark:text-gray-400">Tidak ada layanan yang tersedia untuk jenis kendaraan ini</div>
                             </div>
                         '))
-                        ->visible(fn($get, $livewire) => 
-                            !empty($get('jenis_kendaraan_id')) && 
-                            !$livewire->hasLayananForJenis($get('jenis_kendaraan_id'), 'ringan') &&
-                            !$livewire->hasLayananForJenis($get('jenis_kendaraan_id'), 'sedang') &&
-                            !$livewire->hasLayananForJenis($get('jenis_kendaraan_id'), 'berat')
+                        ->visible(fn ($get) => 
+                            !Layanan::query()
+                                ->whereJsonContains('jenis_kendaraan_akses', (int) $get('jenis_kendaraan_id'))
+                                ->exists()
                         )
                         ->columnSpanFull(),
                 ])
-                ->id('step-3-section')
                 ->columnSpanFull(),
-
-
         ];
     }
 
@@ -1132,10 +1068,10 @@ class AntreanResource extends Resource
         return $table
             ->headerActions([
                 Tables\Actions\Action::make('panduan')
-                    ->label('📋 Panduan Antrean')
+                    ->label('?? Panduan Antrean')
                     ->icon('heroicon-o-question-mark-circle')
                     ->color('gray')
-                    ->modalHeading('📋 Panduan Antrean Aktif')
+                    ->modalHeading('?? Panduan Antrean Aktif')
                     ->modalContent(new HtmlString('
                         <div class="space-y-4 text-gray-900 dark:text-gray-100">
                             <!-- Header Section -->
@@ -1145,95 +1081,28 @@ class AntreanResource extends Resource
                                     Tentang Antrean Aktif
                                 </h3>
                                 <p class="text-sm text-blue-700 dark:text-blue-300">
-                                    Halaman ini menampilkan antrean yang sedang berjalan (status Menunggu atau Dikerjakan). 
-                                    Default: antrean hari ini. Gunakan filter untuk melihat semua antrean aktif.
+                                    Halaman ini menampilkan antrean yang sedang berjalan. Default: antrean hari ini. Gunakan filter untuk melihat antrean kemarin/menginap.
                                 </p>
                             </div>
 
-                            <!-- Alur Kerja -->
+                            <!-- Sistem Tanggal Operasional -->
                             <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                                 <h4 class="font-semibold text-green-900 dark:text-green-100 mb-3 flex items-center gap-2">
-                                    <i class="fas fa-project-diagram text-green-600 dark:text-green-400"></i>
-                                    Alur Kerja Antrean
+                                    <i class="fas fa-calendar-day text-green-600 dark:text-green-400"></i>
+                                    Sistem Tanggal Operasional
                                 </h4>
                                 <div class="space-y-2 text-sm text-green-700 dark:text-green-300">
                                     <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
-                                        <span class="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">1</span>
-                                        <span><strong>Menunggu</strong> → Antrean baru, belum ada mekanik</span>
+                                        <span class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></span>
+                                        <span><strong>Default:</strong> Hanya tampilkan antrean hari ini</span>
                                     </div>
                                     <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
-                                        <span class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">2</span>
-                                        <span><strong>Dikerjakan</strong> → Mekanik sudah ditugaskan, sedang proses</span>
+                                        <span class="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></span>
+                                        <span><strong>Filter "Tampilkan Semua Aktif":</strong> Lihat antrean dari semua tanggal yang belum selesai</span>
                                     </div>
                                     <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
-                                        <span class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">3</span>
-                                        <span><strong>Selesai</strong> → Pindah ke Riwayat Antrean</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Tombol Aksi -->
-                            <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
-                                <h4 class="font-semibold text-purple-900 dark:text-purple-100 mb-3 flex items-center gap-2">
-                                    <i class="fas fa-mouse-pointer text-purple-600 dark:text-purple-400"></i>
-                                    Tombol Aksi
-                                </h4>
-                                <div class="space-y-2 text-sm">
-                                    <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                        <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded flex-shrink-0">Tugaskan</span>
-                                        <span class="text-gray-700 dark:text-gray-300">Pilih mekanik untuk mengerjakan (status: Menunggu)</span>
-                                    </div>
-                                    <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                        <span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded flex-shrink-0">Selesaikan</span>
-                                        <span class="text-gray-700 dark:text-gray-300">Tandai selesai + kirim WA (status: Dikerjakan)</span>
-                                    </div>
-                                    <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                        <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs rounded flex-shrink-0">Edit</span>
-                                        <span class="text-gray-700 dark:text-gray-300">Ubah data antrean</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Fitur Notifikasi -->
-                            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
-                                <h4 class="font-semibold text-orange-900 dark:text-orange-100 mb-3 flex items-center gap-2">
-                                    <i class="fas fa-bell text-orange-600 dark:text-orange-400"></i>
-                                    Fitur Notifikasi
-                                </h4>
-                                <div class="space-y-2 text-sm text-orange-700 dark:text-orange-300">
-                                    <div class="flex items-start gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
-                                        <i class="fas fa-volume-up text-orange-500 mt-0.5 flex-shrink-0"></i>
-                                        <span><strong>Suara TTS:</strong> Pengumuman otomatis saat antrean selesai</span>
-                                    </div>
-                                    <div class="flex items-start gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
-                                        <i class="fab fa-whatsapp text-green-500 mt-0.5 flex-shrink-0"></i>
-                                        <span><strong>WhatsApp:</strong> Kirim notifikasi ke pelanggan saat selesai</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Filter -->
-                            <div class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                                <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-                                    <i class="fas fa-filter text-gray-600 dark:text-gray-400"></i>
-                                    Filter Tersedia
-                                </h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                                    <div class="p-2 bg-white dark:bg-gray-700 rounded-lg">
-                                        <strong class="text-gray-800 dark:text-gray-200">📅 Hari Ini Saja</strong>
-                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Default aktif, hanya tampilkan hari ini</p>
-                                    </div>
-                                    <div class="p-2 bg-white dark:bg-gray-700 rounded-lg">
-                                        <strong class="text-gray-800 dark:text-gray-200">📆 Range Tanggal</strong>
-                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Filter berdasarkan rentang tanggal</p>
-                                    </div>
-                                    <div class="p-2 bg-white dark:bg-gray-700 rounded-lg">
-                                        <strong class="text-gray-800 dark:text-gray-200">🔄 Status</strong>
-                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Menunggu atau Dikerjakan</p>
-                                    </div>
-                                    <div class="p-2 bg-white dark:bg-gray-700 rounded-lg">
-                                        <strong class="text-gray-800 dark:text-gray-200">🔍 Search</strong>
-                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Cari nama, plat nomor, dll</p>
+                                        <span class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+                                        <span><strong>Badge "Menginap":</strong> Antrean dari hari sebelumnya akan ditandai khusus</span>
                                     </div>
                                 </div>
                             </div>
@@ -1264,11 +1133,7 @@ class AntreanResource extends Resource
                         }
                         return 'Tidak diketahui';
                     })
-                    ->searchable(query: function (Builder $query, string $search): Builder {
-                        return $query->whereHas('pengunjung', function (Builder $q) use ($search) {
-                            $q->where('nama_pengunjung', 'like', "%{$search}%");
-                        });
-                    })
+                    ->searchable()
                     ->sortable()
                     ->description(fn (Antrean $record) => $record->pengunjung?->nomor_tlp ?? '-')
                     ->icon('heroicon-o-user'),
@@ -1351,7 +1216,7 @@ class AntreanResource extends Resource
             ->filters([
                 // Filter untuk hanya menampilkan hari ini saja
                 Tables\Filters\Filter::make('hanya_hari_ini')
-                    ->label('Filter: 📅 Hari Ini Saja')
+                    ->label('Filter: ?? Hari Ini Saja')
                     ->query(function (Builder $query) {
                         $today = Carbon::today();
                         return $query->whereDate('created_at', '>=', $today);
@@ -1408,10 +1273,9 @@ class AntreanResource extends Resource
                                                    ->max();
                                 $highestServiceType = array_search($maxLevel, $serviceLevels) ?: 'ringan';
 
-                                // Helper bisa mengerjakan ringan dan sedang, mekanik bisa semua
-                                $query = ($highestServiceType === 'berat')
-                                    ? Karyawan::query()->bisaDitugaskan()->where('role', 'mekanik')
-                                    : Karyawan::query()->bisaDitugaskan()->whereIn('role', ['mekanik', 'helper']);
+                                $query = ($highestServiceType === 'ringan')
+                                    ? Karyawan::query()->bisaDitugaskan()->whereIn('role', ['mekanik', 'helper'])
+                                    : Karyawan::query()->bisaDitugaskan()->where('role', 'mekanik');
                                     
                                 return $query->whereNotIn('id', $busyEmployeeIds)
                                     ->get()
@@ -1587,17 +1451,17 @@ class AntreanResource extends Resource
         
         $pesan = "Halo {$namaPelanggan}!\n\n";
         $pesan .= "Servis kendaraan Anda telah selesai:\n";
-        $pesan .= "📋 No. Antrean: {$nomorAntrean}\n";
-        $pesan .= "👤 Nama Pelanggan: {$namaPelanggan}\n";
-        $pesan .= "🚗 No. Plat: {$platNomor}\n";
-        $pesan .= "🏍️ Jenis Kendaraan: {$merkKendaraan} - {$jenisKendaraan}\n";
-        $pesan .= "🔧 Jenis Layanan: {$jenisLayanan}\n";
-        $pesan .= "⏰ Selesai: {$waktuSelesai}\n\n";
+        $pesan .= "?? No. Antrean: {$nomorAntrean}\n";
+        $pesan .= "?? Nama Pelanggan: {$namaPelanggan}\n";
+        $pesan .= "?? No. Plat: {$platNomor}\n";
+        $pesan .= "??? Jenis Kendaraan: {$merkKendaraan} - {$jenisKendaraan}\n";
+        $pesan .= "?? Jenis Layanan: {$jenisLayanan}\n";
+        $pesan .= "? Selesai: {$waktuSelesai}\n\n";
         $pesan .= "Silakan datang ke bengkel untuk mengambil kendaraan Anda.\n\n";
-        $pesan .= "📍 Lacak status antrean di:\n";
+        $pesan .= "?? Lacak status antrean di:\n";
         $pesan .= "{$trackingUrl}\n\n";
-        $pesan .= "Terima kasih atas kepercayaan Anda! 🙏\n";
-        $pesan .= "— Bengkel Rajawali Motor";
+        $pesan .= "Terima kasih atas kepercayaan Anda! ??\n";
+        $pesan .= "� Bengkel Rajawali Motor";
         
         return $pesan;
     }
@@ -1626,17 +1490,17 @@ class AntreanResource extends Resource
         
         $pesan = "Halo {$namaPelanggan}!\n\n";
         $pesan .= "Kendaraan Anda sedang dalam proses servis:\n";
-        $pesan .= "📋 No. Antrean: {$nomorAntrean}\n";
-        $pesan .= "👤 Nama Pelanggan: {$namaPelanggan}\n";
-        $pesan .= "🚗 No. Plat: {$platNomor}\n";
-        $pesan .= "🏍️ Jenis Kendaraan: {$merkKendaraan} - {$jenisKendaraan}\n";
-        $pesan .= "🔧 Jenis Layanan: {$jenisLayanan}\n";
-        $pesan .= "⏰ Mulai: {$waktuMulai}\n\n";
-        $pesan .= "📍 Lacak status antrean Anda di:\n";
+        $pesan .= "?? No. Antrean: {$nomorAntrean}\n";
+        $pesan .= "?? Nama Pelanggan: {$namaPelanggan}\n";
+        $pesan .= "?? No. Plat: {$platNomor}\n";
+        $pesan .= "??? Jenis Kendaraan: {$merkKendaraan} - {$jenisKendaraan}\n";
+        $pesan .= "?? Jenis Layanan: {$jenisLayanan}\n";
+        $pesan .= "? Mulai: {$waktuMulai}\n\n";
+        $pesan .= "?? Lacak status antrean Anda di:\n";
         $pesan .= "{$trackingUrl}\n\n";
         $pesan .= "Kami akan menginformasikan kembali ketika servis selesai.\n\n";
-        $pesan .= "Terima kasih! 🙏\n";
-        $pesan .= "— Bengkel Rajawali Motor";
+        $pesan .= "Terima kasih! ??\n";
+        $pesan .= "� Bengkel Rajawali Motor";
         
         return $pesan;
     }
