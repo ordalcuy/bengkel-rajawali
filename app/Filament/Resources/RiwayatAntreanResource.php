@@ -529,21 +529,36 @@ class RiwayatAntreanResource extends Resource
                                                 'berat' => 'Servis Berat',
                                                 default => ucfirst($jenis)
                                             };
+
+                                            // Buat list nama layanan spesifik
+                                            $layananNames = $group->pluck('nama_layanan')->map(function ($nama) {
+                                                return '<li class="flex items-center gap-2 py-1.5">
+                                                    <span class="w-2 h-2 rounded-full bg-green-500 dark:bg-green-400 flex-shrink-0"></span>
+                                                    <span class="text-gray-900 dark:text-white font-medium">' . htmlspecialchars($nama) . '</span>
+                                                </li>';
+                                            })->implode('');
                                             
                                             return '
-                                                <div class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                                    <div class="flex items-center gap-3">
-                                                        <div class="w-10 h-10 rounded-full ' . $iconBg . ' flex items-center justify-center">
-                                                            <i class="fas ' . $icon . ' ' . $iconColor . ' text-lg"></i>
+                                                <div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                                    <div class="flex items-center justify-between mb-2">
+                                                        <div class="flex items-center gap-3">
+                                                            <div class="w-10 h-10 rounded-full ' . $iconBg . ' flex items-center justify-center">
+                                                                <i class="fas ' . $icon . ' ' . $iconColor . ' text-lg"></i>
+                                                            </div>
+                                                            <div>
+                                                                <p class="text-sm font-bold text-gray-900 dark:text-white">' . $label . '</p>
+                                                                <p class="text-xs text-gray-500 dark:text-gray-400">' . $group->count() . ' layanan dipilih</p>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <p class="text-sm font-bold text-gray-900 dark:text-white">' . $label . '</p>
-                                                            <p class="text-xs text-gray-500 dark:text-gray-400">' . $group->count() . ' aktivitas layanan yang tersedia</p>
-                                                        </div>
+                                                        <span class="text-xs font-medium px-2.5 py-1 rounded-full border ' . $colorClasses . '">
+                                                            ' . ucfirst($jenis) . '
+                                                        </span>
                                                     </div>
-                                                    <span class="text-xs font-medium px-2.5 py-1 rounded-full border ' . $colorClasses . '">
-                                                        ' . ucfirst($jenis) . '
-                                                    </span>
+                                                    <div class="mt-3 ml-13 pl-3 border-l-2 border-gray-200 dark:border-gray-600">
+                                                        <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                                                            ' . $layananNames . '
+                                                        </ul>
+                                                    </div>
                                                 </div>
                                             ';
                                         })->implode('')) . '

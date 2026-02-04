@@ -105,7 +105,7 @@ class AntreanResource extends Resource
                                 ->schema([
                                     \Filament\Forms\Components\Placeholder::make('info_kendaraan')
                                         ->label('Kendaraan')
-                                        ->content(fn (?Antrean $record): string => $record?->kendaraan?->nomor_plat . ' • ' . ($record?->kendaraan?->merk?->value ?? '-')),
+                                        ->content(fn (?Antrean $record): string => $record?->kendaraan?->nomor_plat . ' ï¿½ ' . ($record?->kendaraan?->merk?->value ?? '-')),
                                 ])
                                 ->columnSpan(1),
 
@@ -787,14 +787,18 @@ class AntreanResource extends Resource
                                 ->placeholder('Masukkan nama lengkap pelanggan')
                                 ->live(debounce: 500)
                                 ->afterStateUpdated(function ($state, Set $set, Get $get) {
+                                    // Reset semua field jika nama dihapus
                                     if (empty($state)) {
                                         $set('pengunjung_id', null);
+                                        $set('nomor_tlp', '');
+                                        $set('alamat', '');
                                         return;
                                     }
                                     
-                                    // Smart detection pelanggan (hanya jika kendaraan belum auto-fill)
+                                    // Smart detection pelanggan - exact match (nama lengkap)
                                     if (empty($get('kendaraan_id'))) {
-                                        $pengunjung = Pengunjung::where('nama_pengunjung', 'like', "{$state}%")->first();
+                                        // Cari pelanggan dengan nama yang SAMA PERSIS (case-insensitive)
+                                        $pengunjung = Pengunjung::whereRaw('LOWER(nama_pengunjung) = ?', [strtolower($state)])->first();
                                         
                                         if ($pengunjung) {
                                             // Auto-fill pelanggan
@@ -802,16 +806,18 @@ class AntreanResource extends Resource
                                             $set('nomor_tlp', $pengunjung->nomor_tlp);
                                             $set('alamat', $pengunjung->alamat ?? '');
                                         } else {
+                                            // Nama tidak match - reset jika sebelumnya ada pelanggan existing
+                                            if ($get('pengunjung_id')) {
+                                                $set('nomor_tlp', '');
+                                                $set('alamat', '');
+                                            }
                                             $set('pengunjung_id', null);
-                                            // Jangan reset nomor tlp/alamat jika user sedang mengetik data baru
-                                            // Tapi jika sebelumnya ada ID, mungkin perlu reset? 
-                                            // Biarkan user mengisi manual jika nama baru.
                                         }
                                     }
                                 })
                                 ->suffixIcon(fn ($get) => $get('pengunjung_id') ? 'heroicon-o-check-circle' : 'heroicon-o-magnifying-glass')
                                 ->suffixIconColor(fn ($get) => $get('pengunjung_id') ? 'success' : 'gray')
-                                ->helperText('Ketik nama - data akan otomatis terisi jika sudah terdaftar')
+                                ->helperText('Ketik nama lengkap - data akan otomatis terisi jika sudah terdaftar')
                                 ->columnSpanFull(),
 
                             TextInput::make('nomor_tlp')
@@ -1461,7 +1467,7 @@ class AntreanResource extends Resource
         $pesan .= "?? Lacak status antrean di:\n";
         $pesan .= "{$trackingUrl}\n\n";
         $pesan .= "Terima kasih atas kepercayaan Anda! ??\n";
-        $pesan .= "— Bengkel Rajawali Motor";
+        $pesan .= "ï¿½ Bengkel Rajawali Motor";
         
         return $pesan;
     }
@@ -1500,7 +1506,7 @@ class AntreanResource extends Resource
         $pesan .= "{$trackingUrl}\n\n";
         $pesan .= "Kami akan menginformasikan kembali ketika servis selesai.\n\n";
         $pesan .= "Terima kasih! ??\n";
-        $pesan .= "— Bengkel Rajawali Motor";
+        $pesan .= "ï¿½ Bengkel Rajawali Motor";
         
         return $pesan;
     }
